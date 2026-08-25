@@ -1,0 +1,14 @@
+{
+  "_why": "DECLARED DEPENDENCIES. This child may import its own files plus these, and NOTHING else. gitEr/unhitch.sh enforces it in a sterile room where ReTreever does not exist. Adding a line here is a DECISION, not a formality: anything starting with $lib, $tinyStore or $mobRoutes, or climbing into ReTreever, is a NO.",
+  "child": "ReTreever_who_what",
+  "allow": [
+    "$app/navigation",
+    "@sveltejs/kit",
+    "clsx",
+    "svelte",
+    "tailwind-merge",
+    "vitest"
+  ],
+  "channel": "./lib/",
+  "_channel_why": "THE CHANNEL — and this child does not have one in the usual sense. The other children name a module prefix through which a host wires an implementation in. ReTreever_who_what takes its ENTIRE host surface as PROPS: `routes` (the host's URL map), `results` (a snippet), `tab`, `title`, `initialQuery`. The shape is declared in ./lib/whoWhatTypes as WhoWhatRoutes, and every field is optional — ReTreever passes its AppRoutes, rapper passes nothing, and selecting a result then goes nowhere rather than to a 404. That is the strongest form of the pattern: there is no module door for anything to leak through, so the prefix below exists only to keep unhitch.sh's report shape uniform. This child has exactly ONE $-import, $app/navigation, and it belongs to SvelteKit, not to the host."
+}
