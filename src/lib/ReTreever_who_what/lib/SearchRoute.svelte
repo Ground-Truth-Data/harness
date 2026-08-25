@@ -1,7 +1,7 @@
 <script lang="ts">
 import { untrack, type Snippet } from "svelte";
 import { goto } from "$app/navigation";
-import type { WhoWhatRoutes } from "./whoWhatTypes";
+import type { WhoWhatEndpoints, WhoWhatRoutes } from "./whoWhatTypes";
 import SearchPage from "./SearchPage.svelte";
 import { loadOrgList, loadProjectList } from "./searchLists";
 import { resolveSearchKey } from "./searchResolve";
@@ -31,6 +31,7 @@ let {
 	initialQuery = "",
 	results,
 	routes = {},
+	endpoints = {},
 }: {
 	tab: "orgs" | "projects";
 	title: string;
@@ -43,6 +44,12 @@ let {
 	 * nothing, and selecting a result then goes nowhere rather than to a 404.
 	 */
 	routes?: WhoWhatRoutes;
+	/**
+	 * The host's API surface. ReTreever passes its `endpoints`; the harness
+	 * passes nothing, and the dropdown lists come back empty rather than
+	 * fetching a path that does not exist here.
+	 */
+	endpoints?: WhoWhatEndpoints;
 } = $props();
 
 // Dropdown lists, LAZY-loaded on first focus/open of the bar (see `activate`),
@@ -63,8 +70,8 @@ async function loadTab(which: "orgs" | "projects") {
 
 	listLoading = true;
 	try {
-		if (which === "orgs") orgs = await loadOrgList(fetch);
-		else projects = await loadProjectList(fetch);
+		if (which === "orgs") orgs = await loadOrgList(fetch, endpoints);
+		else projects = await loadProjectList(fetch, endpoints);
 	} finally {
 		listLoading = false;
 	}
