@@ -35,24 +35,24 @@ import {
 	cellBox,
 	cellOf,
 	cellKey,
-} from "$harness/getCache_OfflineMap/lib/contract/grid";
-import { kmBetween } from "$harness/mapShared/kmGeo";
+} from "../contract/grid";
+import { kmBetween } from "./kmGeo";
 import {
 	OFFLINE_BUDGET_BYTES,
 	allCoverage,
 	type CoverageRecord,
-} from "$harness/getCache_OfflineMap/lib/onPhone/store/coverageRegistry";
+} from "../onPhone/store/coverageRegistry";
 import {
 	getWorkerTarget,
 	tilesHost,
 	type WorkerTarget,
-} from "$harness/getCache_OfflineMap/lib/r2Worker/tilesHost";
+} from "../r2Worker/local_dev/tilesHost";
 import {
 	payloadStats,
 	workStats,
 	type PayloadStat,
 	type WorkStat,
-} from "$harness/mapShared/workMeter.svelte";
+} from "./workMeter.svelte";
 
 /** The schema version of the emitted JSON. Bump when a field's MEANING changes
  *  (a rename or retype), so an old file is never silently misread as a new one. */
