@@ -18,11 +18,13 @@ export async function addOrgMarkersLayer(
     options: MapOptions = {},
 ): Promise<void> {
     try {
-        const apiBase = (options.apiBaseUrl ?? "").replace(/\/$/, "");
+        // Same contract as the polygon layer: a full URL or nothing.
+        const organizationsUrl = options.organizationsUrl;
+        if (!organizationsUrl) return;
         // Fetch organizations from API. The map needs the GeoJSON
         // representation of the collection; the bare endpoint returns rows.
         const response = await fetch(
-            `${apiBase}/api/who/organizations?format=geojson`,
+            `${organizationsUrl}?format=geojson`,
         );
         if (!response.ok) {
             console.error(

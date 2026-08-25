@@ -39,6 +39,7 @@ let {
 	ontogglefavourite,
 	routes = {},
 	ensureMapboxGuards = async () => {},
+	polygonsUrl = undefined,
 }: {
 	initialFeatures?: Feature[];
 	/** Fired with each finished drawing; the route persists it. */
@@ -56,6 +57,12 @@ let {
 	ensureMapboxGuards?: () => Promise<void>;
 	/** Fired by the ★ in the marker box; the route owns the stored list. */
 	ontogglefavourite?: (loc: FavouriteLocation) => void;
+	/**
+	 * FULL URL of the polygons collection, threaded straight to WhereMap.
+	 * ReTreever passes it; the harness passes nothing and the deep-link layer
+	 * does not load. childBoundary RULE 7.
+	 */
+	polygonsUrl?: string;
 } = $props();
 
 let map: import("mapbox-gl").Map | null = $state(null);
@@ -334,6 +341,7 @@ let orgHref = $derived(
 		markerUrl="/pub-Rtvr/map-marker-tailWag-ReTreever.svg"
 		{userLocation}
 		{ensureMapboxGuards}
+		{polygonsUrl}
 	/>
 
 	<!-- Draw engine: sources + in-progress popover only; the tool panel

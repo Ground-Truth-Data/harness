@@ -2,7 +2,6 @@
 import { onMount } from "svelte";
 import { goto } from "$app/navigation";
 import { page } from "$app/stores";
-import { PUBLIC_API_URL } from "$env/static/public";
 import "mapbox-gl/dist/mapbox-gl.css";
 import InfoPanel from "./mapInfoPanel.svelte";
 import MapNavButtons from "./mapNavButtons.svelte";
@@ -65,6 +64,13 @@ function blockBrowserZoom() {
 // ────────────────────────────────────────────────────────────────────────────
 export let markerUrl: string | undefined = undefined;
 export let variant: "land" | "org" = "land";
+/**
+ * FULL URLs from the host — this page knows no route names and reads no env.
+ * Absent means the layers render nothing rather than fetching a path only
+ * ReTreever serves. See childBoundary RULE 7.
+ */
+export let polygonsUrl: string | undefined = undefined;
+export let organizationsUrl: string | undefined = undefined;
 // Draw-tool persistence hooks — threaded straight through to
 // MapDrawControls (mapDrawControls.svelte). The harness never stores drawings itself;
 // the consumer persists finished features and hands them back on load.
@@ -111,7 +117,6 @@ function flyToAndSelect(map: import("mapbox-gl").Map, feature: any) {
 
 onMount(() => {
     const isOrg = variant === "org";
-    const apiBase = PUBLIC_API_URL.replace(/\/$/, "");
     const paramName = isOrg ? "org" : "land";
     const redirectPath = isOrg ? "/who/map" : "/where";
 
@@ -143,7 +148,7 @@ onMount(() => {
         // Org view disables polygon marker loading; org markers come from addOrgMarkersLayer below.
         ...(isOrg && { loadMarkers: false }),
         ...(isMobile && { showDrawTools: false, initialZoom: 3.5 }),
-        apiBaseUrl: apiBase,
+        polygonsUrl,
         ...(markerUrl && { markerUrl }),
         onFeatureSelect: handleFeatureSelect,
         onMapReady: async (map) => {
@@ -151,7 +156,7 @@ onMount(() => {
 
             if (isOrg) {
                 await addOrgMarkersLayer(map, {
-                    apiBaseUrl: apiBase,
+                    organizationsUrl,
                     onFeatureSelect: handleFeatureSelect,
                 });
             } else {
@@ -176,8 +181,9 @@ onMount(() => {
         (async () => {
             try {
                 const apiUrl = isOrg
-                    ? `${apiBase}/api/who/organizations?format=geojson`
-                    : `${apiBase}/api/where/polygons?mode=centroids`;
+                    ? organizationsUrl && `${organizationsUrl}?format=geojson`
+                    : polygonsUrl && `${polygonsUrl}?mode=centroids`;
+                if (!apiUrl) return;
                 const response = await fetch(apiUrl);
                 if (!response.ok) return;
 

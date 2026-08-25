@@ -87,7 +87,11 @@ export async function addMarkersLayer(
     map: mapboxgl.Map,
     options: MapOptions = {},
 ): Promise<void> {
-    const apiBase = (options.apiBaseUrl ?? "").replace(/\/$/, "");
+    // NO HOST URL, NO LAYER. The child is given a full URL or it renders
+    // nothing — it never guesses a route, because only ReTreever serves the
+    // one it used to guess. childBoundary RULE 7.
+    const polygonsUrl = options.polygonsUrl;
+    if (!polygonsUrl) return;
 
     // ─── Phase 2a: fetch lightweight centroids ──────────────────────────────
     let centroidsData: {
@@ -95,7 +99,7 @@ export async function addMarkersLayer(
     } | null = null;
     try {
         const response = await fetch(
-            `${apiBase}/api/where/polygons?mode=centroids`,
+            `${polygonsUrl}?mode=centroids`,
         );
         if (!isMapAlive(map)) return;
         if (!response.ok) {
@@ -146,7 +150,7 @@ export async function addMarkersLayer(
         fullPolygonsInflight = (async () => {
             try {
                 console.log("🔄 Fetching full polygon geometries...");
-                const response = await fetch(`${apiBase}/api/where/polygons`);
+                const response = await fetch(polygonsUrl);
                 if (!isMapAlive(map)) return;
                 if (!response.ok) {
                     console.error(
@@ -335,7 +339,7 @@ export async function addMarkersLayer(
             if (properties.isLargePolygon && polygonId) {
                 try {
                     const response = await fetch(
-                        `${apiBase}/api/where/polygons?id=${encodeURIComponent(polygonId)}`,
+                        `${polygonsUrl}?id=${encodeURIComponent(polygonId)}`,
                     );
                     if (!isMapAlive(map)) return;
                     if (response.ok) {

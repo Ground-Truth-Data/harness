@@ -96,8 +96,16 @@ export interface MapOptions {
     initialZoom?: number;
     /** Initial center [lng, lat] */
     initialCenter?: [number, number];
-    /** API base URL for fetching data */
-    apiBaseUrl?: string;
+    /**
+     * FULL URL of the polygons collection — the child appends query params
+     * and knows no route names. A host that serves them somewhere else, or
+     * not at all, is a host this child still works with: absent means the
+     * layer renders nothing rather than fetching a path only ReTreever has.
+     * See childBoundary RULE 7.
+     */
+    polygonsUrl?: string;
+    /** FULL URL of the organizations collection. Same contract as above. */
+    organizationsUrl?: string;
     /** Override marker image URL */
     markerUrl?: string;
     /** Mapbox style URL */

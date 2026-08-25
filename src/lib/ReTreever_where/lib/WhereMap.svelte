@@ -30,6 +30,7 @@ let {
 	markerUrl = undefined,
 	userLocation = null,
 	ensureMapboxGuards = async () => {},
+	polygonsUrl = undefined,
 }: {
 	map: import("mapbox-gl").Map | null;
 	selectedFeature: any;
@@ -45,6 +46,12 @@ let {
 	 * import the host's boot machinery, and should not need to know it exists.
 	 */
 	ensureMapboxGuards?: () => Promise<void>;
+	/**
+	 * FULL URL of the polygons collection. ReTreever passes it; the harness
+	 * passes nothing and the map renders without the deep-link layer rather
+	 * than fetching a route only ReTreever serves. childBoundary RULE 7.
+	 */
+	polygonsUrl?: string;
 } = $props();
 
 let mapContainer: HTMLDivElement;
@@ -284,7 +291,6 @@ onMount(() => {
 		// with no env var that has to be correct in four places. Safe here
 		// because /where is a (retreever) route: dt-web only, never Capacitor,
 		// where a relative fetch would have no server to reach.
-		const apiBase = "";
 		const landParam = $page.url.searchParams.get("land");
 		const projectNameParam = $page.url.searchParams.get("projectName");
 		const hasTarget = !!(landParam || projectNameParam);
@@ -326,7 +332,7 @@ onMount(() => {
 				showDrawTools: false,
 				initialZoom: MOBILE_HOME_ZOOM,
 			}),
-			apiBaseUrl: apiBase,
+			polygonsUrl,
 			...(markerUrl && { markerUrl }),
 			onFeatureSelect: handleFeatureSelect,
 			onMapReady: (m) => {
@@ -353,8 +359,9 @@ onMount(() => {
 		if (hasTarget) {
 			(async () => {
 				try {
+					if (!polygonsUrl) return;
 					const response = await fetch(
-						`${apiBase}/api/where/polygons?mode=centroids`,
+						`${polygonsUrl}?mode=centroids`,
 					);
 					if (!response.ok) return;
 					const data = await response.json();
