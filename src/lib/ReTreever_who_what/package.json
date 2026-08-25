@@ -1,0 +1,34 @@
+{
+  "name": "retreever-who-what",
+  "version": "0.0.0",
+  "description": "The ReTreever search pages — organisation and project lookup. Takes its entire host surface as props, so it stands alone with none wired in.",
+  "license": "AGPL-3.0-only",
+  "type": "module",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/Ground-Truth-Data/ReTreever_who_what.git"
+  },
+  "files": ["lib", "index.ts"],
+  "exports": {
+    ".": {
+      "types": "./index.ts",
+      "svelte": "./index.ts",
+      "default": "./index.ts"
+    },
+    "./package.json": "./package.json"
+  },
+  "peerDependencies": {
+    "@sveltejs/kit": "^2.16.0",
+    "svelte": "^5.19.0"
+  },
+  "dependencies": {
+    "clsx": "^2.1.1",
+    "tailwind-merge": "^3.4.0"
+  },
+  "devDependencies": {
+    "vitest": "^2.1.9"
+  },
+  "scripts": {
+    "test": "vitest run"
+  }
+}
