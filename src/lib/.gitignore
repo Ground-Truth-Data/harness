@@ -140,7 +140,13 @@ assets/**/*.svg
 # than one folder named at a time.
 # NOTE: this .gitignore lives in src/lib/, so patterns are relative to HERE —
 # a leading "src/lib/" would never match.
-!components/**/lib/whereAssets/
-!components/**/lib/whereAssets/*.svg
-!components/**/lib/homeAssets/
-!components/**/lib/homeAssets/**/*.svg
+# MATCH BY FOLDER NAME, AT ANY DEPTH. These read "components/**/" until
+# 25 Aug 2026 — and RAPPER Phase 1g deleted components/, so they silently
+# stopped matching and the blanket **/*.svg above swallowed the artwork
+# again. That is the third time (where's 8, who_what's 18, who_what's 18
+# again) and the second time a path change disarmed the rule, so the rule
+# no longer encodes where children live.
+!**/whereAssets/
+!**/whereAssets/**/*.svg
+!**/homeAssets/
+!**/homeAssets/**/*.svg
