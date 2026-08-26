@@ -1,16 +1,22 @@
 # rapper
 
-**It is spelled RAPPER, with an A.** It is a joke — a SvelteKit *rapper*, which
-wraps a package. It is also the best accident in this repo: `rg rapper` finds
-only this project's files, where `rg wrapper` finds hundreds of unrelated hits
-in any JS codebase. Do not "fix" the spelling.
+<img width="1254" height="1254" alt="rapper" src="https://github.com/user-attachments/assets/53029e8e-815f-4fb2-8a35-b97e71beb84e" />
 
-A rapper is a bare SvelteKit instance whose only job is to hold **one child**
-so it can be run, debugged and handed to someone who does not have the rest of
-the product.
+**A SvelteKit *rapper*,** that to operate any one of ReTreever and Get Cache's awesome component repos(npm packages) including
 
-A child is source code, not an app: it has nothing to `npm run dev` on its own.
-Rapper is what makes it runnable.
+- [https://github.com/Ground-Truth-Data/getCache_offlineMap]([url](https://github.com/Ground-Truth-Data/getCache_offlineMap))
+- [https://github.com/Ground-Truth-Data/getCache_OnlineMap]([url](https://github.com/Ground-Truth-Data/getCache_OnlineMap))
+- [https://github.com/Ground-Truth-Data/ReTreever_who_what]([url](https://github.com/Ground-Truth-Data/ReTreever_who_what))
+- [https://github.com/Ground-Truth-Data/ReTreever_where]([url](https://github.com/Ground-Truth-Data/ReTreever_where))
+- [https://github.com/Ground-Truth-Data/ReTreever_ratings]([url](https://github.com/Ground-Truth-Data/ReTreever_ratings))
+
+**First install *Rapper*,** 
+Then in terminal **choose which component package to install** from the list. 
+Finally run 
+```
+npm run dev
+```
+And enjoy the component at [http://localhost:5174/]([url](http://localhost:5174/))
 
 ---
 
