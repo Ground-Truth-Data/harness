@@ -1,6 +1,6 @@
 <script lang="ts">
 /**
- * THE DEV BAR — the harness shell, as a component the child's layout renders.
+ * THE SHARED NAV — the harness shell, as a component the child's layout renders.
  *
  * It is a near-copy of the bar getCache_OfflineMap has carried in its
  * routes/+layout.svelte since 24 Aug 2026, and the copy is deliberate: a child
