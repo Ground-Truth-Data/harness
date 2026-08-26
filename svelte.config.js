@@ -27,7 +27,7 @@ const config = {
          * fewer features, but running. What it must never do is collapse.
          *
          * It used to collapse silently the other way. `$lib` was defined here
-         * pointing at ./src/lib — the SAME directory as `$harness`. So a child
+         * pointing at ./src/lib — the SAME directory as `$parent`. So a child
          * importing `$lib/anything` resolved into the harness's own lib and
          * "worked", on this machine, where ReTreever happens to sit next door.
          * On a contractor's laptop it dies. `$generated` was worse: it pointed
@@ -48,74 +48,45 @@ const config = {
             // inside src/lib any more (moved 25 Aug 2026). The wall is still an
             // ABSENCE: no $lib, no $generated, so a child reaching for a parent
             // still fails to build. Only the children's own location changed.
-            $harness: "../",
-            "$harness/*": "../*",
+            // $parent/siblings — the flat folder holding every child, one level
+            // up in fetch/. The `../` lives HERE, in one declared line, never in
+            // an import: noEscapePlugin forbids a raw climb in a specifier
+            // because that hardcodes today's layout, and an alias is a seam
+            // somebody can review and repoint.
+            "$parent/siblings": "../",
+            "$parent/siblings/*": "../*",
 
             /**
-             * $hostStyles — THE PARENT'S OWN TOKENS, whichever parent that is.
+             * $parent — THE MOUNTING PARENT, WHICHEVER ONE IT IS.
              *
-             * This is the ONE alias a child may use to reach a stylesheet, and
-             * it exists because the tokens genuinely differ per parent: this
-             * repo's app.unique.css paints every white VIOLET so you can tell
-             * at a glance which tier is feeding a page. That was built and then
-             * never loaded — rapper's app.css was imported by
-             * `rapper/src/routes/+layout.svelte`, which was DELETED when the
-             * route root moved into the child, and nothing re-established it.
-             * MEASURED 25 Aug 2026: :5174 rendered every white still white, and
-             * the search bar lost its gold border, because no var() resolved.
+             * One alias, then a REAL PATH. A child writes
+             * `$parent/retreeved/app.css` and reads it as a path, not a
+             * renamed thing. rapper and ReTreever each point $parent at
+             * THEMSELVES, so the same import lands in a different repo
+             * depending on which server is running. That IS the switch.
              *
-             * It has to be an alias rather than a relative import for the usual
-             * reason — `../../rapper/src/app.css` from a child is a raw climb
-             * into a parent, which noEscapePlugin throws on and noParentNames
-             * fails. An alias names no parent; each parent fills it in.
+             * Replaces $hostStyles and $devPill, which each renamed a file
+             * instead of pathing to it — you could not tell from the import
+             * what it fetched, and a rename on disk left the alias lying
+             * (MEASURED 26 Aug 2026: $devPill/sharedParentPill/HostPill.svelte
+             * still imported after the folder became ParentPill/).
              *
-             * ReTreever defines the same key pointing at ITS app.css. A child
-             * cloned alone defines neither, so the import fails loudly at build
-             * rather than silently rendering untokenised — which is the whole
-             * lesson of this bug.
+             * It must stay an ALIAS, not a relative import. `../../rapper/...`
+             * from a child NAMES rapper, so the ReTreever side dies and the
+             * switch with it. noEscapePlugin throws on the raw climb and
+             * noParentNames fails it. An alias names no parent; each parent
+             * fills it in. A child cloned alone defines none, so the import
+             * fails LOUDLY at build rather than rendering untokenised.
+             *
+             * retreeved/ is GENERATED from ReTreever by gitEr/syncRetreeved.sh
+             * on every run_dev_start. Do not edit it here; edit the source in
+             * ReTreever. app.css and app.unique.css are deliberately NOT
+             * copied — they are the half the tiers must disagree on (white
+             * there, violet here), which is how a page declares its tier.
              */
-            $hostStyles: "./retreeved/app.css",
+            $parent: ".",
+            "$parent/*": "./*",
 
-            /**
-             * $devPill — THE SHARED DEV CONTROL, one file for both parents.
-             *
-             * ReTreever defines this same key against the same folder. The
-             * component lives in fetch/tools/devPill/, ABOVE both repos and
-             * owned by neither, because two copies drifted the moment they
-             * existed — different padding, different font-size, and for a
-             * while the two halves in opposite orders.
-             *
-             * An alias rather than a raw ../../tools/ climb: the climb is what
-             * noEscapePlugin throws on, and an alias is one declared line
-             * somebody can review and repoint.
-             */
-            /**
-             * $devPill — SHARED DEV CHROME, kept identical by a COPY.
-             *
-             * retreeved/ is GENERATED from ReTreever/retreever/ by
-             * gitEr/syncRetreeved.sh, which runs on every run_dev_start. Do
-             * not edit anything in it; edit the source.
-             *
-             * WHY A COPY AND NOT AN ALIAS INTO ReTreever. An alias was built
-             * and measured working — both servers compiled one file and
-             * emitted the same scoped-style hash. It was still wrong: it is a
-             * SECOND outward alias, harnessIsolation.test.ts failed on it, and
-             * more to the point rapper is meant to be cloned WITHOUT this
-             * monorepo. A path into ReTreever resolves here and nowhere else.
-             * Real files survive the clone.
-             */
-            $devPill: "./retreeved/sharedComponents/sharedMenu",
-
-            /**
-             * $sharedAssets — the brand marks, one copy, shared.
-             *
-             * Both tiers fill this with their own retreeved/assets/, which the
-             * atomic sync replaces from ReTreever on every server start. A
-             * child imports a mark through this alias and gets whichever tier
-             * mounted it, naming neither — and there is exactly one file per
-             * mark instead of the same .webp drifting in three folders.
-             */
-            $sharedAssets: "./retreeved/assets",
         },
         /**
          * THE MOUNTED CHILD'S ROUTES ARE THE APP'S ROUTES.

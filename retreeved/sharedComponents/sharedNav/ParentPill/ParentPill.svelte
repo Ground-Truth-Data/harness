@@ -1,6 +1,6 @@
 <script lang="ts">
 /**
- * HostPill — THE ONE FILE. Both parents render THIS, not a copy of it.
+ * ParentPill — THE ONE FILE. Both parents render THIS, not a copy of it.
  *
  * WHY IT LIVES IN fetch/tools/ AND NOT IN EITHER REPO
  * There were two copies — ReTreever/src/lib/core/map/HostPill.svelte and one
@@ -15,10 +15,10 @@
  * without one parent importing the other.
  *
  * HOW EACH PARENT REACHES IT
- * Both define the same alias, `$devPill`, in their svelte.config.js:
+ * Both define the same alias, `$parent`, in their svelte.config.js:
  *
- *     ReTreever/svelte.config.js   $devPill: "../tools/devPill"
- *     rapper/svelte.config.js      $devPill: "../tools/devPill"
+ *     both parents:  $parent: "."   (then a real path)
+ *     a child writes: $parent/retreeved/sharedComponents/sharedNav/ParentPill/ParentPill.svelte
  *
  * An alias, not a relative path, for the usual reason: a raw `../../tools/...`
  * climb out of a child is what noEscapePlugin throws on, and an alias is one

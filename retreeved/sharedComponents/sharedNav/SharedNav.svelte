@@ -24,10 +24,10 @@
  */
 /**
  * THE SHARED PILL — one file, above both repos, rendered by both parents.
- * See $devPill/HostPill.svelte. The child's own copy was deleted: it had
+ * See ./ParentPill/ParentPill.svelte. The child's own copy was deleted: it had
  * already drifted from ReTreever's in padding, font-size and half-order.
  */
-import HostPill from "./sharedParentPill/HostPill.svelte";
+import ParentPill from "./ParentPill/ParentPill.svelte";
 
 type View = { href: string; label: string; missing?: boolean };
 
@@ -52,7 +52,7 @@ let {
 	views?: View[];
 	ghIcon: string;
 	/** The pill's four facts, passed straight through. This bar does not know
-	 *  which tier it is either — see HostPill for why a child may not guess. */
+	 *  which tier it is either — see ParentPill for why a child may not guess. */
 	tier: string;
 	otherTier: string;
 	/** Which half this tier occupies — fixed, so the pill never reorders. */
@@ -110,7 +110,7 @@ const GH = "https://github.com/Ground-Truth-Data";
 			     floating in a corner. It is the control that answers "which
 			     tier am I looking at", so it belongs beside the other facts
 			     about the mount rather than hovering over the artwork. -->
-			<HostPill
+			<ParentPill
 				leftLabel={leftTier}
 				rightLabel={rightTier}
 				current={tier}

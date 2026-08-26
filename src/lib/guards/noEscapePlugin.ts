@@ -34,7 +34,7 @@ import type { Plugin } from "vite";
  *
  * THE RULE, EXACTLY
  *   - Inside the repo, `../` is ordinary. Not our business.
- *   - Leaving the repo is allowed ONLY through an alias ($harness, $lib …).
+ *   - Leaving the repo is allowed ONLY through an alias ($parent/siblings, $lib …).
  *     An alias is a declared, reviewable seam; a raw `../../../` climb is not.
  *   - node_modules and virtual modules are exempt — that is how packages work.
  *
@@ -104,7 +104,7 @@ export function noEscapeHatch(repoRoot: string): Plugin {
 		// A guard that runs after the decision is not a guard. "pre" puts it
 		// first, so it sees every specifier before anything resolves it.
 		//
-		// The trade: at "pre" an ALIASED import still looks like `$harness/...`
+		// The trade: at "pre" an ALIASED import still looks like `$parent/siblings/...`
 		// rather than a resolved path. That is fine — a `$`-prefixed specifier
 		// is not a relative path, so it falls out at the `startsWith(".")`
 		// check below and passes, which is exactly the intent: aliases are the
@@ -158,7 +158,7 @@ export function noEscapeHatch(repoRoot: string): Plugin {
 								`  repoint. A raw ../../ climb hardcodes today's folder layout\n` +
 								`  into a source file, and it breaks silently the next time\n` +
 								`  anything moves.\n\n` +
-								`  Use $harness/<child>/... (svelte.config.js kit.alias), or\n` +
+								`  Use $parent/siblings/<child>/... (svelte.config.js kit.alias), or\n` +
 								`  move the file inside the repo.\n`),
 				);
 			}

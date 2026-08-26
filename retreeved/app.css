@@ -10,7 +10,7 @@
 @import '../src/app.unique.css';
 /* The children are FLAT — siblings of ReTreever in fetch/, not nested
    inside rapper/src/lib any more (moved 25 Aug 2026). A CSS @import is a
-   plain relative path: the $harness alias rewrites JS imports only and
+   plain relative path: the $parent/siblings alias rewrites JS imports only and
    never touches this line, so it had to be repointed by hand. */
 @import '../../getCache_OnlineMap/lib/map.css';
 /* ── VENDOR MAP CSS — ALWAYS `layer(vendor)`, NEVER BARE ────────────────────
