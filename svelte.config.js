@@ -115,4 +115,26 @@ const config = {
     },
 };
 
+/**
+ * ONE MOUNT POINT, THREE THINGS MOUNTED.
+ *
+ * The installer rewrites exactly one string — `files.routes` above
+ * (rapper_director/bin/create.mjs, the `routes:` regex) — so params and hooks
+ * are DERIVED from it rather than repeating the child's name. Repeating it
+ * means an install repoints the routes and leaves the matchers behind, which
+ * is how /who 500'd with "No matcher found for parameter 'searchTab'"
+ * (27 Aug 2026): the child shipped params/searchTab.ts, kit.files.params
+ * still defaulted to rapper/src/params, and that directory does not exist.
+ * The same absence left the child's hooks.ts unmounted, so its `reroute` —
+ * the whole reason "/" resolves to /who — never ran either.
+ *
+ * A child carrying neither is fine, and most do not: SvelteKit guards the
+ * params directory with existsSync (create_manifest_data/index.js:91) and
+ * resolves the hooks entry only if a file is actually there. Only
+ * ReTreever_who_what ships either today.
+ */
+const child = config.kit.files.routes.replace(/\/routes$/, "");
+config.kit.files.params = `${child}/params`;
+config.kit.files.hooks = { universal: `${child}/hooks` };
+
 export default config;

@@ -46,6 +46,10 @@ export type ChildRecord = {
 	/** Every pathname this child serves, longest-prefix matched. The child's
 	 *  route folder is the truth; this mirrors it so a lookup needs no fs. */
 	paths: string[];
+	/** Paths the child serves that NO parent mirrors — its own standalone
+	 *  preview. Listed so a lookup still identifies the child, and excluded
+	 *  from the tier table so the pill never points at a parent 404. */
+	soloPaths?: string[];
 };
 
 /**
@@ -70,6 +74,7 @@ export const CHILDREN: ChildRecord[] = [
 		name: "offline map",
 		logo: "GC_fly_logo_transparent.webp",
 		paths: ["/offline", "/offline/debug", "/demo"],
+		soloPaths: ["/demo"],
 	},
 	{
 		repo: "getCache_OnlineMap",
@@ -77,6 +82,7 @@ export const CHILDREN: ChildRecord[] = [
 		name: "online map",
 		logo: "GC_fly_logo_transparent.webp",
 		paths: ["/map", "/map/debug", "/demo"],
+		soloPaths: ["/demo"],
 	},
 	{
 		repo: "ReTreever_where",
@@ -93,6 +99,7 @@ export const CHILDREN: ChildRecord[] = [
 		 * the parent's /where correctly finds no child here.
 		 */
 		paths: ["/"],
+		soloPaths: ["/"],
 	},
 ];
 
