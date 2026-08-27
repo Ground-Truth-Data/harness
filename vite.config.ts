@@ -66,6 +66,17 @@ export default defineConfig({
 			"http://retreever.localhost:5173",
 		),
 		/**
+		 * WHERE THE OTHER TIER'S PILL DROPS YOU when this page maps nowhere.
+		 *
+		 * NOT "/". ReTreever answers "/" with its marketing homepage and serves
+		 * the search this child mirrors at /who, so falling back to "/" landed
+		 * you on a landing page — a working page, but not the work. Only the
+		 * tier being linked TO knows where its useful entry point is, and only
+		 * the installer knows which tier that is, so it is injected here beside
+		 * the origin it belongs to.
+		 */
+		"import.meta.env.VITE_OTHER_HOME": JSON.stringify("/who"),
+		/**
 		 * THIS TIER'S ROUTE TABLE — replaces the single VITE_OTHER_MOUNT.
 		 *
 		 * VITE_OTHER_MOUNT was ONE path for the whole tier, so the pill landed
