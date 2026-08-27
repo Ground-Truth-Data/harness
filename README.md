@@ -14,17 +14,58 @@ component repos on its own:
 ## Get started
 
 ```bash
-git clone https://github.com/Ground-Truth-Data/rapper.git
-cd rapper
-npm install        # then choose which component to install
+npm create @retreever/rapper my-tool
+```
+
+It asks which component you want, sets it up, and that is the whole install:
+
+```
+  Which ReTreever component?
+
+    1  getCache_OfflineMap   Offline map engine
+    2  getCache_OnlineMap    Mapbox online map
+    3  ReTreever_where       Where page
+    4  ReTreever_who_what    Who / What directory pages
+
+  Enter a number (1-4):
+```
+
+Then:
+
+```bash
+cd my-tool
+npm install
 npm run dev
 ```
 
 Enjoy the component at <http://localhost:5174/>.
 
+**Why `npm create` and not `npm install`?** Because it asks you a question, and
+`npm install` is not allowed to — it runs unattended on build servers and in CI,
+where a prompt has nobody to answer it. `npm create` is the verb that may ask;
+it is the same one behind `npm create vite` and `npm create svelte`.
+
+**One rapper, one component.** A second component means a second install, in a
+second folder. What you get is a flat pair of folders, because that adjacency is
+what the `$parent/siblings` alias resolves against:
+
+```
+my-tool/
+├── rapper/                 <- the parent
+└── getCache_OfflineMap/    <- the component, SIBLING of rapper
+```
+
 > **The offline map needs ~50 MB of assets first.** Tiles, glyphs and demo
-> imagery are not in git. Run `src/lib/getCache_OfflineMap/fetchAssets.sh`, or
+> imagery are not in git. Run `getCache_OfflineMap/fetchAssets.sh`, or
 > ask Ground Truth Data for the bundle. See `ASSETS.md`.
+
+### Developing rapper itself
+
+```bash
+git clone https://github.com/Ground-Truth-Data/rapper.git
+```
+
+Clone the components beside it, not inside it — see CONTRIBUTING.md.
 
 ## How it works
 

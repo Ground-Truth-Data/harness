@@ -1,7 +1,6 @@
 {
-	"name": "harness",
-	"version": "0.0.1",
-	"private": true,
+	"name": "@retreever/rapper",
+	"version": "0.1.0",
 	"type": "module",
 	"engines": {
 		"node": ">=22"
@@ -13,7 +12,9 @@
 		"build": "vite build",
 		"preview": "vite preview",
 		"check": "svelte-kit sync && svelte-check --tsconfig ./tsconfig.json",
-		"test:unit": "vitest"
+		"test:unit": "vitest",
+		"prepack": "node bin/vendor-children.mjs",
+		"postpack": "node bin/clean-children.mjs"
 	},
 	"dependencies": {
 		"@mapbox/vector-tile": "^3.0.0",
@@ -51,5 +52,41 @@
 		"typescript": "^5.7.3",
 		"vite": "^5.4.12",
 		"vitest": "^2.1.9"
+	},
+	"description": "A SvelteKit rapper that runs any one of ReTreever and Get Cache's component repos on its own.",
+	"license": "AGPL-3.0-or-later",
+	"repository": {
+		"type": "git",
+		"url": "git+https://github.com/Ground-Truth-Data/rapper.git"
+	},
+	"homepage": "https://github.com/Ground-Truth-Data/rapper#readme",
+	"bugs": {
+		"url": "https://github.com/Ground-Truth-Data/rapper/issues"
+	},
+	"keywords": [
+		"sveltekit",
+		"reforestation",
+		"offline-map",
+		"retreever",
+		"getcache"
+	],
+	"bin": {
+		"create-rapper": "./bin/create.mjs"
+	},
+	"files": [
+		"bin/",
+		"src/",
+		"retreeved/",
+		"_children/",
+		"svelte.config.js",
+		"vite.config.ts",
+		"tsconfig.json",
+		"postcss.config.js",
+		"README.md",
+		"CONTRIBUTING.md",
+		"LICENSE"
+	],
+	"publishConfig": {
+		"access": "public"
 	}
 }
