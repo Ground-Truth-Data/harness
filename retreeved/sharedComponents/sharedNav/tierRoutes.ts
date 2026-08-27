@@ -107,3 +107,102 @@ export function otherTierPath(
 export function currentRepo(pathname: string, routes: TierRoute[]): string | undefined {
 	return matchRoute(pathname, routes)?.repo;
 }
+
+/**
+ * THE `?rtvrFrom=` STAMP IS DELETED — the cause was fixed instead.
+ *
+ * There was a pair of helpers here, stampOrigin/readOrigin, that wrote the
+ * page you were leaving into the destination's query string so the far side
+ * could send you back to it. They existed because rapper served BOTH of the
+ * who_what child's views from "/": two views, one url, a many-to-one mapping
+ * with no inverse, so returning always guessed /who.
+ *
+ * The child now serves /who and /what itself. Each row is a bijection, the
+ * return trip is an ordinary table lookup, and there is nothing left to carry
+ * beside the url. Carrying state next to a url that can already express it was
+ * the bug; deleting the carrier is the fix, not an additional layer on it.
+ *
+ * If a future child again mounts several views on one path, the answer is to
+ * give it real paths — not to bring this back.
+ */
+
+/**
+ * DOES THE OTHER TIER SERVE THIS PAGE AT ALL?
+ *
+ * `otherTierPath` deliberately always returns something, because a pill that
+ * points nowhere reads as broken. But that same helpfulness hides a real
+ * difference: "rapper shows this at /" and "rapper does not show this, here is
+ * its home instead" come back as identical strings, so the caller cannot tell
+ * a MAPPING from a SUBSTITUTION and silently sends you somewhere you did not
+ * ask for.
+ *
+ * This answers the question the path cannot. False → the caller greys the pill
+ * out rather than performing a swap it never announced.
+ *
+ * A stamped origin (readOrigin) always wins over this: if the other tier told
+ * us where we came from, that page demonstrably exists there.
+ */
+export function servesOtherSide(pathname: string, routes: TierRoute[]): boolean {
+	return matchRoute(pathname, routes)?.otherPath !== undefined;
+}
+
+/**
+ * WHAT THE OTHER TIER ACTUALLY SERVES — asked, not asserted.
+ *
+ * THE BUG THIS DELETES
+ * `servesOtherSide` above answers from a TABLE, and a table can only describe
+ * a tier in general. A rapper install carries exactly ONE child, chosen at
+ * install time, so the running server serves a strict SUBSET of what the table
+ * lists. MEASURED 27 Aug 2026: the table declared /map, /map/debug, /offline
+ * and /offline/debug, the pill rendered live links for all four, and the rapper
+ * on :5174 — a who_what install — answered every one of them with a 404.
+ *
+ * The table was not wrong. It was answering a different question. "Which of my
+ * routes COULD map across" is a fact about the source; "does the thing on the
+ * other end have this page" is a fact about a process that is running right
+ * now, and no build-time artifact can hold it. Adding rows, or hand-syncing a
+ * second table against whichever child is installed, is the same duplication
+ * one layer along — it drifts the first time somebody swaps the child.
+ *
+ * So this asks. HEAD the url on the other tier and read the status. The server
+ * that answers IS the authority on what it serves, which is a thing no table
+ * can be. Both dev servers already send `Access-Control-Allow-Origin: *`, so
+ * the cross-origin request is readable.
+ *
+ * DEV ONLY, and that is structural rather than promised: the sole caller sits
+ * behind `import.meta.env.DEV`, so this function is unreachable — and tree-
+ * shaken — in a production build. It must never become a runtime dependency of
+ * anything a user loads.
+ *
+ * Failure is UNKNOWN, never false: if the other tier is not running, or the
+ * fetch is blocked, the honest answer is "cannot tell", and the caller keeps
+ * the pill live rather than greying out a destination that may be fine. A
+ * control that disables itself because a probe failed is worse than one that
+ * occasionally lands on a 404 you can see and read.
+ */
+export type OtherSideStatus = "serves" | "missing" | "unknown";
+
+export async function probeOtherSide(
+	origin: string,
+	path: string,
+	fetchImpl: typeof fetch = fetch,
+): Promise<OtherSideStatus> {
+	try {
+		const res = await fetchImpl(origin + path, {
+			method: "HEAD",
+			// The probe must not disturb what it measures: no cookies, and no
+			// cached verdict from before the child was swapped.
+			credentials: "omit",
+			cache: "no-store",
+		});
+		if (res.status === 404) return "missing";
+		if (res.ok) return "serves";
+		// A 5xx means the route EXISTS and is broken — a different problem, and
+		// not one the pill should hide by greying out. /where 500s on ReTreever
+		// today and is still somewhere you may want to go.
+		return res.status >= 500 ? "serves" : "unknown";
+	} catch {
+		// The other tier is not running, or refused the request. Unknowable.
+		return "unknown";
+	}
+}

@@ -21,7 +21,7 @@
 
    THE POINT IS NOT TO REPAIR IT. rapper deliberately shed Tailwind, PostCSS
    and ~20 other dependencies in the RAPPER strip (see package.json `_why`);
-   re-adding them to render a dev harness would undo that on purpose. And a
+   re-adding them to render a dev shell would undo that on purpose. And a
    child does not need ReTreever's stylesheet — it needs the TOKENS its own
    components read. There are 19 of those, listed by grepping every var() the
    four children reference against what ReTreever defines. They are resolved to
@@ -49,7 +49,7 @@
 	   Resolved to literals. In ReTreever these live in
 	   src/lib/mobile/styles/mobile.css, which rapper does not carry — copying
 	   the three values is cheaper and more honest than importing a mobile
-	   stylesheet into a harness that runs no mobile app.
+	   stylesheet into a parent that runs no mobile app.
 
 	   --rt-fg is NOT here: it is one of the whites, so app.unique.css owns it
 	   and sets it violet. Defining it here would silently win and kill the

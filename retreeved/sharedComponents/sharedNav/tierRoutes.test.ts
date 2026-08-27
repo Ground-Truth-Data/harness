@@ -7,13 +7,19 @@
  * / under ReTreever — regardless of where you actually were.
  */
 import { describe, expect, it } from "vitest";
-import { TIER_HOME, currentRepo, otherTierPath } from "./tierRoutes";
+import {
+	TIER_HOME,
+	currentRepo,
+	otherTierPath,
+	servesOtherSide,
+} from "./tierRoutes";
 import type { TierRoute } from "./tierRoutes";
 
 /** ReTreever's real table: two search tabs plus the offline map child. */
 const RETREEVER: TierRoute[] = [
-	{ path: "/who", otherPath: "/", repo: "ReTreever_who_what" },
-	{ path: "/what", otherPath: "/", repo: "ReTreever_who_what" },
+	// One-to-one, as the real table now is: the child serves both views.
+	{ path: "/who", otherPath: "/who", repo: "ReTreever_who_what" },
+	{ path: "/what", otherPath: "/what", repo: "ReTreever_who_what" },
 	{ path: "/offline", otherPath: "/offline", repo: "getCache_OfflineMap" },
 	{ path: "/where", repo: "getCache_OfflineMap" },
 ];
@@ -26,12 +32,12 @@ const RAPPER: TierRoute[] = [
 describe("otherTierPath", () => {
 	it("carries the current view across, not a fixed page", () => {
 		// THE BUG: both of these used to return "/" — the hardcoded otherPath.
-		expect(otherTierPath("/what", RETREEVER)).toBe("/");
+		expect(otherTierPath("/what", RETREEVER)).toBe("/what");
 		expect(otherTierPath("/offline", RETREEVER)).toBe("/offline");
 	});
 
 	it("resolves a nested route through its parent entry", () => {
-		expect(otherTierPath("/who/acme", RETREEVER)).toBe("/");
+		expect(otherTierPath("/who/acme", RETREEVER)).toBe("/who");
 		expect(otherTierPath("/offline/tiles", RETREEVER)).toBe("/offline");
 	});
 
@@ -104,7 +110,7 @@ describe("otherTierPath — the other tier's landing route", () => {
 
 	it("still prefers a real mapping over the landing route", () => {
 		// A landing route must never override a route that DOES map.
-		expect(otherTierPath("/what", RETREEVER, "/who")).toBe("/");
+		expect(otherTierPath("/what", RETREEVER, "/who")).toBe("/what");
 		expect(otherTierPath("/", RAPPER, "/nope")).toBe("/who");
 	});
 
@@ -112,5 +118,72 @@ describe("otherTierPath — the other tier's landing route", () => {
 		// A child cloned alone gets undefined from its absent parent config.
 		expect(otherTierPath("/legal", RETREEVER)).toBe(TIER_HOME);
 		expect(otherTierPath("/legal", RETREEVER, undefined)).toBe(TIER_HOME);
+	});
+});
+
+/**
+ * THE RETURN TRIP, WITHOUT A CARRIER.
+ *
+ * Standing on /what, switching tiers, and switching back landed on /who — the
+ * bug that a `?rtvrFrom=` query stamp was built to paper over. The stamp is
+ * deleted: the child now serves /who and /what itself, so each row maps one
+ * page to exactly one page and the inverse is just another lookup.
+ *
+ * These assert the property that makes the carrier unnecessary — go across,
+ * come back, arrive where you started.
+ */
+describe("the tier hop round-trips", () => {
+	/** rapper's table, now that its child serves both views at real paths. */
+	const RAPPER_BIJECTIVE: TierRoute[] = [
+		{ path: "/who", otherPath: "/who" },
+		{ path: "/what", otherPath: "/what" },
+	];
+
+	it("returns you to the page you left, for every mapped route", () => {
+		for (const here of ["/who", "/what"]) {
+			const there = otherTierPath(here, RETREEVER);
+			expect(otherTierPath(there, RAPPER_BIJECTIVE)).toBe(here);
+		}
+	});
+
+	it("/what no longer collapses onto /who", () => {
+		// THE BUG, as a test: these two must not share a destination, or the
+		// return trip cannot tell them apart and has to guess.
+		expect(otherTierPath("/who", RETREEVER)).not.toBe(
+			otherTierPath("/what", RETREEVER),
+		);
+	});
+
+	it("maps each view to a DISTINCT counterpart — no many-to-one", () => {
+		const mapped = RAPPER_BIJECTIVE.map((r) => r.otherPath);
+		expect(new Set(mapped).size).toBe(mapped.length);
+	});
+});
+
+/**
+ * THE PILL MUST BE ABLE TO TELL A MAPPING FROM A SUBSTITUTION.
+ *
+ * Both come back from otherTierPath as a plain string, so without this the
+ * caller cannot distinguish "rapper serves this at /" from "rapper serves
+ * nothing here, have its home" — and it silently performs a swap it never
+ * announced. These pin the difference.
+ */
+describe("servesOtherSide", () => {
+	it("is true only for a row that declares a counterpart", () => {
+		expect(servesOtherSide("/who", RETREEVER)).toBe(true);
+		expect(servesOtherSide("/what", RETREEVER)).toBe(true);
+	});
+
+	it("is false for a listed route the other tier does not serve", () => {
+		// /where is listed (so the GitHub link works) but has no otherPath.
+		expect(servesOtherSide("/where", RETREEVER)).toBe(false);
+	});
+
+	it("is false for a route nobody has heard of", () => {
+		expect(servesOtherSide("/legal", RETREEVER)).toBe(false);
+	});
+
+	it("resolves through a parent entry like the other helpers do", () => {
+		expect(servesOtherSide("/who/acme", RETREEVER)).toBe(true);
 	});
 });

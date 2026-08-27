@@ -20,7 +20,7 @@ const config = {
                   runtime: "nodejs24.x",
               }),
         /**
-         * THE LINCHPIN — the harness defines NO alias that leaves it.
+         * THE LINCHPIN — rapper defines NO alias that leaves it.
          *
          * A child is a trailer. Hitched to ReTreever it gets app.css, the
          * utils, the whole parent app. Unhitched it must still STAND — plainer,
@@ -28,15 +28,15 @@ const config = {
          *
          * It used to collapse silently the other way. `$lib` was defined here
          * pointing at ./src/lib — the SAME directory as `$parent`. So a child
-         * importing `$lib/anything` resolved into the harness's own lib and
+         * importing `$lib/anything` resolved into rapper's own lib and
          * "worked", on this machine, where ReTreever happens to sit next door.
          * On a contractor's laptop it dies. `$generated` was worse: it pointed
-         * at "../src/lib/generated", reaching up out of the harness and into
+         * at "../src/lib/generated", reaching up out of rapper and into
          * ReTreever itself.
          *
          * So the wall is an ABSENCE, not a check. With no `$lib` defined, a
          * child that reaches for ReTreever fails to BUILD — here, on your
-         * machine, in the harness — which is the same failure a contractor
+         * machine, in rapper — which is the same failure a contractor
          * would hit, found by you first. childBoundary.test.ts states this rule
          * in test form; this is what makes it TRUE rather than merely asserted.
          *
@@ -111,6 +111,32 @@ const config = {
          */
         files: {
             routes: "../ReTreever_who_what/routes",
+            /**
+             * THE CHILD'S PARAM MATCHERS, for the same reason as its routes.
+             *
+             * The child serves /who and /what from ONE dynamic route guarded
+             * by a `searchTab` matcher. SvelteKit resolves matchers only from
+             * `kit.files.params`, which defaults to rapper's own src/params —
+             * a folder that does not exist here. Without this line the route
+             * `[tab=searchTab]` references a matcher SvelteKit cannot find and
+             * the build fails outright.
+             *
+             * The installer writes this beside `routes`; a child that declares
+             * no matchers simply has an empty folder.
+             */
+            params: "../ReTreever_who_what/params",
+            /**
+             * THE CHILD'S UNIVERSAL HOOKS, beside its routes and matchers.
+             *
+             * The child maps "/" onto its default view with `reroute`, so that
+             * a view it declares has exactly ONE url naming it. SvelteKit
+             * loads this from `kit.files.hooks.universal`, which defaults to
+             * rapper's own src/hooks — a file that does not exist here — so
+             * without this line the hook silently never runs and "/" 404s.
+             */
+            hooks: {
+                universal: "../ReTreever_who_what/hooks",
+            },
         },
     },
 };

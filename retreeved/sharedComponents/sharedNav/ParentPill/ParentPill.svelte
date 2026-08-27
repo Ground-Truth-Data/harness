@@ -48,6 +48,7 @@ let {
 	rightLabel,
 	current,
 	href,
+	unavailable = false,
 }: {
 	/** The tier shown on the left. FIXED per deployment, never "me first". */
 	leftLabel: string;
@@ -60,12 +61,39 @@ let {
 	/** Where the OTHER tier serves this same page. Omitted → no pill, which is
 	 *  the honest answer when there is no other tier to switch to. */
 	href?: string;
+	/**
+	 * The other tier is RUNNING but does not serve this page.
+	 *
+	 * Distinct from `href` being absent, and the distinction is the whole
+	 * point. No href at all = "there is no other tier" (a child cloned alone),
+	 * and the control vanishes. Unavailable = "the other tier is right there,
+	 * but this page is not on it" — so the pill STAYS, greyed and inert.
+	 *
+	 * Hiding it in that case would answer a different question than the one
+	 * asked: you would not be able to tell "no other tier" from "not this
+	 * page", which are the two things this control exists to distinguish.
+	 */
+	unavailable?: boolean;
 } = $props();
 
 const other = $derived(current === leftLabel ? rightLabel : leftLabel);
 </script>
 
-{#if href}
+{#if unavailable}
+	<!-- INERT, NOT ABSENT. A <span>, so there is no href to follow, nothing to
+	     middle-click, and no focus stop — a link that goes nowhere is worse
+	     than no link, because it looks identical to one that works right up
+	     until you click it. The lit half still shows which tier you are on, so
+	     the control keeps doing the half of its job that is still true. -->
+	<span
+		class="host-pill unavailable"
+		title={`${other} is running, but it does not serve this page — nothing to switch to from here.`}
+	>
+		<span class:on={current === leftLabel}>{leftLabel}</span><span
+			class:on={current === rightLabel}>{rightLabel}</span
+		>
+	</span>
+{:else if href}
 	<!-- An <a>, not a <button>: this is a real navigation to a real other
 	     server, so it should behave like a link (middle-click, cmd-click,
 	     right-click all work). A button that navigates is a link in a costume.
@@ -102,6 +130,15 @@ const other = $derived(current === leftLabel ? rightLabel : leftLabel);
 		font: inherit;
 		padding: 0;
 		white-space: nowrap;
+	}
+	/* GREYED AND INERT. Dimmed as a whole rather than restyling the halves, so
+	   the lit/unlit relationship still reads — it is the same control, just not
+	   offering anything. `default` cursor, not `not-allowed`: nothing is
+	   forbidden here, there is simply nowhere to go. */
+	.host-pill.unavailable {
+		cursor: default;
+		opacity: 0.45;
+		filter: grayscale(1);
 	}
 	.host-pill span {
 		padding: 0.35rem 0.8rem;

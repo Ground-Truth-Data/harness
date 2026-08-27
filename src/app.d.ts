@@ -1,6 +1,6 @@
 // See https://kit.svelte.dev/docs/types#app
 // for information about these interfaces
-// The harness is a headless frontend - no auth, no direct DB access
+// rapper is a headless frontend - no auth, no direct DB access
 declare global {
     namespace App {
         interface Locals {
