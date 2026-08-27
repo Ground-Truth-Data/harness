@@ -60,6 +60,23 @@ export default defineConfig({
 	 * missing key is simply `undefined`. Both failures were MEASURED.
 	 */
 	define: {
+		/**
+		 * WHOSE TILES WORKER, IF ANY. Empty by default — ON PURPOSE.
+		 *
+		 * getCache_OfflineMap no longer carries a production origin, so nothing
+		 * here may supply one either: hardcoding the maintainer's Worker in
+		 * rapper would just move the leak one folder over, since rapper is the
+		 * tier a stranger clones and runs. Whoever runs this copy sets it:
+		 *
+		 *     VITE_TILES_HOST=https://tiles.example.org npm run dev
+		 *
+		 * Read and applied in src/hooks.client.ts. Unset means the offline map
+		 * runs and tile fetches fail with a message naming configureTilesHost —
+		 * visibly unconfigured, never silently borrowing somebody's bucket.
+		 */
+		"import.meta.env.VITE_TILES_HOST": JSON.stringify(
+			process.env.VITE_TILES_HOST ?? "",
+		),
 		"import.meta.env.VITE_RAPPER_TIER": JSON.stringify("rapper"),
 		"import.meta.env.VITE_OTHER_TIER": JSON.stringify("retreever"),
 		"import.meta.env.VITE_OTHER_ORIGIN": JSON.stringify(
