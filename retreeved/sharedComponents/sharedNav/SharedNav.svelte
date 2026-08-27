@@ -28,6 +28,15 @@
  * already drifted from ReTreever's in padding, font-size and half-order.
  */
 import ParentPill from "./ParentPill/ParentPill.svelte";
+/**
+ * THE ROUTE MAP — how the live URL becomes the other tier's URL.
+ *
+ * The pill used to take a fixed `otherPath`, so it always landed on the same
+ * page no matter where you were. See ./tierRoutes.ts for why a build-time
+ * constant could never carry that fact.
+ */
+import { TIER_HOME, currentRepo, otherTierPath } from "./tierRoutes";
+import type { TierRoute } from "./tierRoutes";
 
 type View = { href: string; label: string; missing?: boolean };
 
@@ -36,6 +45,7 @@ let {
 	name,
 	logo,
 	repo,
+	routes = [],
 	views = [],
 	ghIcon,
 	pathname = "",
@@ -43,11 +53,13 @@ let {
 	otherTier,
 	tierSlot,
 	otherHost,
-	otherPath,
+	selfRepo = "rapper",
 }: {
 	owner: string;
 	name: string;
 	logo: string;
+	/** Fallback repo for the second GitHub link, used when the live route has
+	 *  no child behind it in `routes`. Per-VIEW resolution wins when it can. */
 	repo: string;
 	views?: View[];
 	ghIcon: string;
@@ -58,7 +70,14 @@ let {
 	/** Which half this tier occupies — fixed, so the pill never reorders. */
 	tierSlot?: "left" | "right";
 	otherHost?: string;
-	otherPath?: string;
+	/** THIS TIER'S ROUTE TABLE — passed in, never written here. Each parent
+	 *  declares the routes IT serves and where they land on the other tier;
+	 *  this component names no tier, so it cannot know. Empty (a child cloned
+	 *  alone) → every path falls back to home, which is the honest answer. */
+	routes?: TierRoute[];
+	/** The repo of the tier doing the mounting, for the first GitHub link.
+	 *  Told, not assumed: "rapper" was hardcoded here, which named a parent. */
+	selfRepo?: string;
 	/** The live pathname, so a view can render as the current one. Passed in
 	 *  rather than read from $app/state here: this component is also mounted
 	 *  by a parent that may not be SvelteKit, and importing $app/state would
@@ -73,6 +92,24 @@ const dev = import.meta.env.DEV;
 // agree — and they do, because each knows only where IT sits.
 const leftTier = $derived(tierSlot === "left" ? tier : otherTier);
 const rightTier = $derived(tierSlot === "left" ? otherTier : tier);
+
+/**
+ * THE PILL'S DESTINATION, DERIVED FROM THE URL YOU ARE ACTUALLY ON.
+ *
+ * `pathname` is the live one — it was already passed in for highlighting the
+ * current view, and was sitting right there unused while the href came from a
+ * constant. No route match → the other tier's home, never a dead pill.
+ */
+const otherPath = $derived(otherTierPath(pathname, routes));
+
+/**
+ * THE GITHUB LINK FOLLOWS THE VIEW, NOT THE MOUNT.
+ *
+ * A parent may serve several children; the repo shown is the one backing the
+ * page in front of you. Falls back to the mount's own `repo` where the live
+ * route names no child.
+ */
+const viewRepo = $derived(currentRepo(pathname, routes) ?? repo);
 
 const GH = "https://github.com/Ground-Truth-Data";
 </script>
@@ -100,12 +137,16 @@ const GH = "https://github.com/Ground-Truth-Data";
 		</nav>
 
 		<span class="right">
-			<a class="btn gh" href="{GH}/rapper" target="_blank" rel="noreferrer">
-				<img src={ghIcon} alt="" /> rapper
+			<a class="btn gh" href="{GH}/{selfRepo}" target="_blank" rel="noreferrer">
+				<img src={ghIcon} alt="" /> {selfRepo}
 			</a>
-			<a class="btn gh" href="{GH}/{repo}" target="_blank" rel="noreferrer">
-				<img src={ghIcon} alt="" /> {repo}
-			</a>
+			<!-- The CHILD repo for the view you are on. Derived from the live
+			     pathname, so walking from /who to /offline changes it. -->
+			{#if viewRepo && viewRepo !== selfRepo}
+				<a class="btn gh" href="{GH}/{viewRepo}" target="_blank" rel="noreferrer">
+					<img src={ghIcon} alt="" /> {viewRepo}
+				</a>
+			{/if}
 			<!-- THE PILL LIVES HERE, at the top of the page, in the bar — not
 			     floating in a corner. It is the control that answers "which
 			     tier am I looking at", so it belongs beside the other facts
@@ -114,7 +155,7 @@ const GH = "https://github.com/Ground-Truth-Data";
 				leftLabel={leftTier}
 				rightLabel={rightTier}
 				current={tier}
-				href={otherHost ? otherHost + (otherPath ?? "/") : undefined}
+				href={otherHost ? otherHost + (otherPath ?? TIER_HOME) : undefined}
 			/>
 		</span>
 	</header>

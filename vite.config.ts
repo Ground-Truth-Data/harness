@@ -65,11 +65,34 @@ export default defineConfig({
 		"import.meta.env.VITE_OTHER_ORIGIN": JSON.stringify(
 			"http://retreever.localhost:5173",
 		),
-		// Where the OTHER parent mounts this child. The two need not agree:
-		// rapper serves one page at "/", ReTreever serves /who and /what from
-		// one dynamic route. Carrying the path across verbatim was MEASURED
-		// landing on a 404.
-		"import.meta.env.VITE_OTHER_MOUNT": JSON.stringify("/who"),
+		/**
+		 * THIS TIER'S ROUTE TABLE — replaces the single VITE_OTHER_MOUNT.
+		 *
+		 * VITE_OTHER_MOUNT was ONE path for the whole tier, so the pill landed
+		 * on /who no matter which page you were on. A tier serves many routes
+		 * and they map to different places, so the fact is a TABLE, not a
+		 * scalar — see retreeved/sharedComponents/sharedNav/tierRoutes.ts.
+		 *
+		 * The two tiers need not agree on paths: rapper serves one page at "/",
+		 * ReTreever serves /who and /what from one dynamic route. Carrying a
+		 * path across verbatim was MEASURED landing on a 404, which is why each
+		 * entry names its counterpart explicitly and anything unlisted falls
+		 * back to the other tier's home.
+		 *
+		 * JSON, not a JS literal: `define` is a text substitution, so whatever
+		 * appears here is pasted into the bundle as source. An object literal
+		 * survives that, and JSON.stringify of an array of plain objects IS a
+		 * valid one.
+		 *
+		 * A rapper install carries exactly ONE child, so this table has one row
+		 * per view that child serves. The installer writes it, as it writes
+		 * kit.files.routes.
+		 */
+		"import.meta.env.VITE_TIER_ROUTES": JSON.stringify(
+			JSON.stringify([
+				{ path: "/", otherPath: "/who", repo: "ReTreever_who_what" },
+			]),
+		),
 		// Which half of the pill this tier occupies. FIXED per tier —
 		// retreever left, rapper right — so the control renders identically on
 		// both servers and only the HIGHLIGHT moves. It used to render "me"

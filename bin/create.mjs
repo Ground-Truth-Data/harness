@@ -174,24 +174,114 @@ function findChildren() {
 		.sort((a, b) => a.name.localeCompare(b.name));
 }
 
+/**
+ * THE PICKER — arrow keys when the terminal allows it, typed numbers when not.
+ *
+ * TWO MODES, AND THE FALLBACK IS NOT OPTIONAL. Arrow keys need RAW MODE, where
+ * the terminal hands over every keystroke instead of buffering a line. That
+ * needs a real TTY, so it is unavailable exactly where this tool still has to
+ * work: piped input (`printf '2\n' | npm create …`), CI, a Docker build, an
+ * editor's embedded terminal. `stdin.isTTY` decides, and the numbered prompt
+ * below is the same one that shipped first — kept, not reimplemented.
+ *
+ * NO DEPENDENCY. A picker is the classic reason to reach for inquirer/prompts,
+ * and it would be the only runtime dep this package has. Node reads raw keys on
+ * its own; the whole cost is the escape-sequence table below.
+ */
 async function choose(children, rl) {
-	console.log(`\n  ${c.bold("Which ReTreever component?")}\n`);
 	const width = Math.max(...children.map((k) => k.name.length));
-	children.forEach((k, i) => {
-		const label = k.name.padEnd(width);
-		console.log(`    ${c.cyan(String(i + 1))}  ${label}   ${c.dim(k.description)}`);
-	});
-	console.log();
+	const render = (k, i, selected) => {
+		const mark = selected ? c.cyan("❯") : " ";
+		const name = selected ? c.cyan(c.bold(k.name.padEnd(width))) : k.name.padEnd(width);
+		return `  ${mark} ${name}   ${c.dim(k.description)}`;
+	};
 
-	for (;;) {
-		const answer = (await rl.question(`  Enter a number ${c.dim(`(1-${children.length})`)}: `)).trim();
-		const n = Number(answer);
-		if (Number.isInteger(n) && n >= 1 && n <= children.length) return children[n - 1];
-		// Let them type the name too — a number is a fine default but nobody
-		// remembers that "3" was the offline map.
-		const byName = children.find((k) => k.name.toLowerCase() === answer.toLowerCase());
-		if (byName) return byName;
-		console.log(`  ${c.red("Not a valid choice.")}`);
+	console.log(`\n  ${c.bold("Which ReTreever component?")}\n`);
+
+	if (!stdin.isTTY) {
+		// NO TTY — typed numbers. Not a lesser path: this is what a pipe, a CI
+		// job and a Docker build all get, and the install has to survive there.
+		children.forEach((k, i) => {
+			console.log(`    ${c.cyan(String(i + 1))}  ${k.name.padEnd(width)}   ${c.dim(k.description)}`);
+		});
+		console.log();
+		for (;;) {
+			const answer = (await rl.question(`  Enter a number ${c.dim(`(1-${children.length})`)}: `)).trim();
+			const n = Number(answer);
+			if (Number.isInteger(n) && n >= 1 && n <= children.length) return children[n - 1];
+			// Accept the name too — nobody remembers that "3" was the offline map.
+			const byName = children.find((k) => k.name.toLowerCase() === answer.toLowerCase());
+			if (byName) return byName;
+			console.log(`  ${c.red("Not a valid choice.")}`);
+		}
+	}
+
+	// The readline instance would compete for the same keystrokes.
+	rl.pause();
+
+	let at = 0;
+	children.forEach((k, i) => console.log(render(k, i, i === at)));
+	console.log(`\n  ${c.dim("↑ ↓ to move, ⏎ to choose")}`);
+	stdout.write("\x1b[?25l"); // hide the cursor; it parks distractingly mid-list
+
+	const redraw = () => {
+		// Up over the hint, its blank line, and one line per child, then repaint.
+		stdout.write(`\x1b[${children.length + 2}A`);
+		children.forEach((k, i) => stdout.write(`\x1b[2K${render(k, i, i === at)}\n`));
+		stdout.write(`\n  ${c.dim("↑ ↓ to move, ⏎ to choose")}\n`);
+	};
+
+	const restore = () => {
+		stdout.write("\x1b[?25h"); // cursor back, ALWAYS — see the finally below
+		if (stdin.isRaw) stdin.setRawMode(false);
+		stdin.pause();
+	};
+
+	try {
+		stdin.setRawMode(true);
+		stdin.resume();
+		return await new Promise((resolve, reject) => {
+			const onKey = (buf) => {
+				const key = buf.toString();
+				switch (key) {
+					case "[A": // up
+					case "k":
+						at = (at - 1 + children.length) % children.length;
+						redraw();
+						break;
+					case "[B": // down
+					case "j":
+						at = (at + 1) % children.length;
+						redraw();
+						break;
+					case "\r": // enter
+					case "\n":
+						stdin.off("data", onKey);
+						resolve(children[at]);
+						break;
+					case "": // ctrl-c — a raw-mode terminal does NOT send SIGINT
+						stdin.off("data", onKey);
+						restore();
+						console.log("\n  cancelled\n");
+						process.exit(130);
+						break;
+					default: {
+						// Number keys still work, so the muscle memory from the
+						// typed prompt is not punished.
+						const n = Number(key);
+						if (Number.isInteger(n) && n >= 1 && n <= children.length) {
+							at = n - 1;
+							redraw();
+						}
+					}
+				}
+			};
+			stdin.on("data", onKey);
+		});
+	} finally {
+		// Raw mode is PROCESS-WIDE state. Leaving it on hands the user a shell
+		// with no echo and no working ctrl-c, so this runs on every exit path.
+		restore();
 	}
 }
 
