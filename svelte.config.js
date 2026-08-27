@@ -109,8 +109,46 @@ const config = {
          * If rapper builds and emits NO pages, this path is wrong — SvelteKit
          * does not error on a missing route tree, it silently serves nothing.
          */
+        /**
+         * ⛔ THREE KEYS, ONE CHILD — AND THEY MOVE TOGETHER.
+         *
+         * `routes` alone was here until 27 Aug 2026, on the stated belief that
+         * "that path is the whole mount". It is not, and the installer had
+         * already been fixed for it (rapper_director/bin/create.mjs,
+         * `pointRapperAt`) while this file — a different repo — was left behind.
+         * That split is the flat-sibling hazard in miniature: the rewriter and
+         * the thing it rewrites cannot be fixed in one commit.
+         *
+         * MEASURED: with `routes` pointed at ReTreever_who_what and `params`
+         * left at the SvelteKit default, `svelte-kit sync` died with
+         *
+         *     No matcher found for parameter 'searchTab' in route /[tab=searchTab]
+         *
+         * while ReTreever_who_what/params/searchTab.ts sat there the whole time.
+         * SvelteKit was looking in rapper/src/params, which does not exist.
+         *
+         * ⛔ WHY `hooks.universal` IS THE DANGEROUS ONE. A wrong `params` is
+         * loud, and only by luck — a route happened to demand a matcher. A wrong
+         * `hooks.universal` is SILENT: the hook never runs, the app builds green,
+         * and it misbehaves at runtime. That is why all three are written even
+         * though only ReTreever_who_what currently ships a `hooks.ts` or a
+         * `params/`. A child with neither is fine: SvelteKit treats an absent
+         * matcher directory and an absent hooks module as absent, not an error.
+         *
+         * ⛔ `routes` MUST STAY THE FIRST KEY, AND NO COMMENT MAY SIT BETWEEN
+         * `files: {` AND IT. The installer anchors on /files:\s*\{\s*routes:/ —
+         * MEASURED 27 Aug 2026, putting this very comment inside the block made
+         * that pattern stop matching, which would have died the install.
+         *
+         * If rapper builds and emits NO pages, `routes` is wrong — SvelteKit
+         * does not error on a missing route tree, it silently serves nothing.
+         */
         files: {
             routes: "../ReTreever_who_what/routes",
+            params: "../ReTreever_who_what/params",
+            hooks: {
+                universal: "../ReTreever_who_what/hooks",
+            },
         },
     },
 };
