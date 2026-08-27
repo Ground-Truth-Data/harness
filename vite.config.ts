@@ -137,6 +137,70 @@ function otherHome(): string {
 	return rows[0]?.otherPath ?? "/";
 }
 
+/**
+ * WHERE THIS INSTALL ACTUALLY STARTS — read from the child's own reroute hook.
+ *
+ * Vite prints `http://localhost:5174/`, which is technically where the server
+ * answers and NOT where the app begins: "/" is rerouted to the child's landing
+ * view, and every other path this install serves hangs off that. Someone who
+ * installed one child from npm has exactly two or three real urls, and the
+ * printed one names none of them.
+ *
+ * The hook is the authority — it is the file that performs the reroute — so
+ * this reads its `DEFAULT` constant rather than restating the mapping here and
+ * letting the two drift. No hook, or an unreadable one, prints nothing extra:
+ * a convenience must never be the thing that breaks `npm run dev`.
+ */
+function childLandingPath(): string | undefined {
+	const repo = mountedChildRepo();
+	if (!repo) return undefined;
+	try {
+		const hooks = readFileSync(
+			fileURLToPath(new URL(`../${repo}/hooks.ts`, import.meta.url)),
+			"utf8",
+		);
+		return hooks.match(/const DEFAULT = "([^"]+)"/)?.[1];
+	} catch {
+		return undefined;
+	}
+}
+
+/**
+ * PRINT THE LANDING URL BESIDE VITE'S OWN, once the port is really known.
+ *
+ * The port matters: Vite falls back to 5175, 5176… when 5174 is taken, so a
+ * url composed from the CONFIGURED port is wrong exactly when someone has two
+ * of these running — which is the case where they most need to be told apart.
+ * `configureServer` + `httpServer.once("listening")` reads the port the OS
+ * actually granted, after Vite has printed its own banner.
+ */
+function printLandingUrl() {
+	return {
+		name: "rapper-landing-url",
+		apply: "serve" as const,
+		configureServer(server: {
+			httpServer: { once: (e: string, cb: () => void) => void } | null;
+			config: { logger: { info: (msg: string) => void } };
+		}) {
+			const landing = childLandingPath();
+			if (!landing || !server.httpServer) return;
+			server.httpServer.once("listening", () => {
+				const addr = (server.httpServer as unknown as {
+					address: () => { port: number } | null;
+				}).address();
+				if (!addr) return;
+				// setTimeout(0) so this lands AFTER Vite's own "ready in" banner
+				// rather than racing it into the middle of the output.
+				setTimeout(() => {
+					server.config.logger.info(
+						`  \x1b[32m➜\x1b[0m  \x1b[1mStart here:\x1b[0m http://localhost:${addr.port}${landing}`,
+					);
+				}, 0);
+			});
+		},
+	};
+}
+
 export default defineConfig(({ command }) => {
 /**
  * THE TIER FACTS ARE DEV-ONLY, AND THAT IS ENFORCED HERE.
@@ -280,6 +344,7 @@ const tierFacts = dev
 return {
 
 	plugins: [
+		printLandingUrl(),
 		// THE DOOR — the same one ReTreever arms, on the other side of the
 		// house. Both parents mount the same children, so an escape a child
 		// makes is only caught by whichever parent happens to build it. With

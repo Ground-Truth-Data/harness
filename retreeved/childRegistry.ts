@@ -60,10 +60,71 @@ export type ChildRecord = {
 	 * from the child it mounted, and that child already has its own row.
 	 */
 	tier?: boolean;
+	/**
+	 * THE DEFAULT VIEW — where this child STARTS when it is mounted alone.
+	 *
+	 * Declared, never inferred. It was inferred once, from "first path that is
+	 * not a soloPath", and that produced /offline for the offline map when the
+	 * intended landing page is /offline/debug — a guess dressed as a rule. Which
+	 * view a child opens on is a product decision; path order is an accident of
+	 * how the array was typed.
+	 *
+	 * Everything that needs "where does this app begin" reads THIS: the child's
+	 * reroute hook for "/", the nav logo's link, and the url the dev server
+	 * prints. One statement, three consumers, no drift.
+	 */
+	defaultPath: string;
 	/** Paths the child serves that NO parent mirrors — its own standalone
 	 *  preview. Listed so a lookup still identifies the child, and excluded
 	 *  from the tier table so the pill never points at a parent 404. */
 	soloPaths?: string[];
+	/**
+	 * THE NAV BUTTONS — this child's own views, named.
+	 *
+	 * `paths` says WHAT a child serves; this says what to CALL each one and
+	 * which are worth a button. They are different questions: /demo is served
+	 * and deliberately unlisted here, and a nested route can be worth a button
+	 * without being a separate path entry.
+	 *
+	 * They used to live in each child's own routes/+layout.svelte as a `views`
+	 * array. That file is `kit.files.routes`, so it wraps EVERY page the tier
+	 * serves — who_what's list therefore rendered a "search" button on
+	 * /offline, pointing into a child that was not even mounted. And when the
+	 * hand-copied bars were replaced by SharedNav the lists went with them, so
+	 * MEASURED 27 Aug 2026 the bar had NO buttons at all.
+	 *
+	 * Keyed by child, resolved by which child owns the live pathname, so a bar
+	 * shows the buttons of the thing you are actually looking at.
+	 */
+	views?: NavView[];
+	/**
+	 * THE FLAG THAT MOUNTS THIS CHILD IN A FRESH rapper.
+	 *
+	 * `npm create @retreever/rapper rapper -- --offline` names the component on
+	 * the command line and skips the interactive picker, which is the only way
+	 * the scaffold works unattended — CI, a Docker build, a script.
+	 *
+	 * WHY IT IS WRITTEN DOWN RATHER THAN DERIVED. create.mjs resolves a flag by
+	 * normalising case and separators, then taking a UNIQUE SUBSTRING match, so
+	 * "--offline" reaches getCache_OfflineMap while an ambiguous fragment errors.
+	 * The shortest flag that stays unique is therefore a fact about the WHOLE
+	 * set of children, not about any one of them — adding a sibling can make a
+	 * previously-fine flag ambiguous. installFlags.test.ts re-runs create.mjs's
+	 * own matching over every row here, so that day fails a test instead of
+	 * printing a snippet that dies in the user's terminal.
+	 *
+	 * Absent on a tier: a tier is what gets scaffolded, not what gets mounted.
+	 */
+	installFlag?: string;
+};
+
+/** One button in the bar: where it goes, and what it says. */
+export type NavView = {
+	/** Pathname on the mounting tier. Must be one this child really serves —
+	 *  navViews.test.ts checks each against `paths`. */
+	href: string;
+	/** The button text. Lowercase, terse: this is dev chrome, not product UI. */
+	label: string;
 };
 
 /**
@@ -104,33 +165,52 @@ export const CHILDREN: ChildRecord[] = [
 	},
 	{
 		repo: "ReTreever_who_what",
+		installFlag: "who_what",
 		org: "Ground-Truth-Data",
 		name: "who_what",
 		logo: "ReTreever_logo_sm.webp",
 		paths: ["/", "/who", "/what"],
+		defaultPath: "/who",
 		/** "/" is this child's own landing url when mounted alone — hooks.ts
 		 *  reroutes it to /who. Solo, so no parent is offered a "/" that is
 		 *  really the parent's own homepage. */
 		soloPaths: ["/"],
+		views: [
+			{ href: "/who", label: "who" },
+			{ href: "/what", label: "what" },
+		],
 	},
 	{
 		repo: "getCache_OfflineMap",
+		installFlag: "offline",
 		org: "Ground-Truth-Data",
 		name: "offline map",
 		logo: "GC_fly_logo_transparent.webp",
 		paths: ["/", "/offline", "/offline/debug", "/demo"],
+		defaultPath: "/offline/debug",
 		soloPaths: ["/", "/demo"],
+		views: [
+			{ href: "/offline", label: "offline" },
+			{ href: "/offline/debug", label: "debug" },
+		],
 	},
 	{
 		repo: "getCache_OnlineMap",
+		installFlag: "online",
 		org: "Ground-Truth-Data",
 		name: "online map",
 		logo: "GC_fly_logo_transparent.webp",
 		paths: ["/", "/map", "/map/debug", "/demo"],
+		defaultPath: "/map/debug",
 		soloPaths: ["/", "/demo"],
+		views: [
+			{ href: "/map", label: "map" },
+			{ href: "/map/debug", label: "debug" },
+		],
 	},
 	{
 		repo: "ReTreever_where",
+		installFlag: "where",
 		org: "Ground-Truth-Data",
 		name: "where",
 		logo: "ReTreever_logo_sm.webp",
@@ -144,7 +224,11 @@ export const CHILDREN: ChildRecord[] = [
 		 * the parent's /where correctly finds no child here.
 		 */
 		paths: ["/"],
+		defaultPath: "/",
 		soloPaths: ["/"],
+		// Serves only "/" so far — no second view to switch between, so no
+		// buttons. It gets them when it gets real paths.
+		views: [],
 	},
 ];
 
@@ -185,4 +269,38 @@ export function childByRepo(repo: string): ChildRecord | undefined {
  */
 export function githubUrl(child: ChildRecord): string {
 	return `https://github.com/${child.org}/${child.repo}`;
+}
+
+/**
+ * THE SCAFFOLD COMMAND FOR ONE CHILD — built, never written down.
+ *
+ * WHY IT IS BUILT HERE. The command was typed by hand every time it was
+ * needed, so the package name, the `--min-release-age=0`, the `--` separator
+ * and the child flag appeared in as many places as there were reasons to
+ * mention it. Each one is a fact this table already holds or a constant the
+ * whole set shares; assembling them once means a renamed child changes one
+ * row and every printed snippet follows.
+ *
+ * THE TWO PARTS THAT LOOK LIKE NOISE AND ARE NOT:
+ *  - `--min-release-age=0` is npm's, and belongs BEFORE the `--`. npm refuses
+ *    a package published within its default release-age window, which is
+ *    exactly the situation every time this repo publishes and is immediately
+ *    tested; without it a just-published version is invisible to its own
+ *    scaffold.
+ *  - `--` separates npm's flags from create-rapper's. The child flag after it
+ *    reaches create.mjs's argv; the same flag before it is eaten by npm and
+ *    the scaffold falls back to the interactive picker, which is precisely the
+ *    hang this flag exists to prevent.
+ *
+ * Returns null for a tier and for any row with no flag: a tier IS the thing
+ * being scaffolded, so there is no command to mount it into itself.
+ */
+export function createCommand(child: ChildRecord, dir = "rapper"): string | null {
+	if (child.tier || !child.installFlag) return null;
+	return `npm create @retreever/rapper@latest ${dir} --min-release-age=0 -- --${child.installFlag}`;
+}
+
+/** Every child that can be scaffolded, in table order — the menu. */
+export function installableChildren(): ChildRecord[] {
+	return CHILDREN.filter((c) => !c.tier && c.installFlag);
 }

@@ -317,6 +317,16 @@ const MOUNTED = (import.meta.env as Record<string, string | undefined>)
 const mountedChild = $derived(MOUNTED ? childByRepo(MOUNTED) : undefined);
 
 const viewChild = $derived(mountedChild ?? childForPath(pathname));
+
+/**
+ * THE DEFAULT VIEW — where the logo goes, and where "/" reroutes.
+ *
+ * Read from the record's `defaultPath`, which the child DECLARES. This was
+ * computed here once — "first path that is not a soloPath" — and it silently
+ * chose /offline for a child whose landing page is /offline/debug. Path order
+ * is not a statement of intent, so it is no longer treated as one.
+ */
+const landing = $derived(viewChild?.defaultPath ?? "/");
 const viewRepo = $derived(
 	viewChild?.repo ?? currentRepo(pathname, routes) ?? repo,
 );
@@ -327,6 +337,49 @@ const viewRepo = $derived(
  * reason the repo link did.
  */
 const viewName = $derived(viewChild?.name ?? name);
+
+/**
+ * THE NAV BUTTONS — from the registry, for the child serving THIS page.
+ *
+ * They arrived as a `views` prop, written into each child's own
+ * routes/+layout.svelte. That file is `kit.files.routes`, so it wraps every
+ * page the tier serves: who_what's list rendered a "search" button on
+ * /offline, linking into a child that was not even mounted. Emptying those
+ * lists fixed the wrong button and left NO buttons — MEASURED 27 Aug 2026,
+ * zero nav buttons on :5174/offline.
+ *
+ * Resolved by pathname, like the name and the repo link beside it, so the bar
+ * shows the views of whatever you are actually looking at. The prop is kept as
+ * a fallback for a child cloned with no registry reachable.
+ */
+const viewButtons = $derived(viewChild?.views ?? views);
+
+/**
+ * IS THIS PAGE ONE THE MOUNTED CHILD ACTUALLY SERVES?
+ *
+ * MEASURED 27 Aug 2026 on `:5174/what` — a 404 under a getCache_OfflineMap
+ * install: the bar read "Get Cache · offline map" with offline/debug buttons,
+ * looking exactly as it does on a page that works. The identity was correct
+ * (that IS the mounted child) but nothing said the URL was a dead end, so a
+ * 404 and a live page were indistinguishable in the one strip whose job is to
+ * tell you where you are.
+ *
+ * A rapper install carries ONE child, and the registry says which paths that
+ * child serves. Anything else is a 404 by construction, so the bar can say so
+ * without asking the server.
+ *
+ * Only meaningful when the mount is known. With no VITE_MOUNTED_CHILD — a
+ * parent serving several children, or a child cloned alone — there is no such
+ * thing as "not this install's page", and this stays false.
+ */
+const offMountedChild = $derived.by(() => {
+	if (!mountedChild || !pathname) return false;
+	const paths = mountedChild.paths ?? [];
+	if (paths.length === 0) return false;
+	return !paths.some(
+		(p) => pathname === p || (p !== "/" && pathname.startsWith(p + "/")),
+	);
+});
 
 /** Built from the record, so the org appears once in the whole codebase. */
 const GH = "https://github.com/Ground-Truth-Data";
@@ -355,13 +408,34 @@ const viewRepoUrl = $derived(
 {#if dev}
 	<header>
 		<span class="left">
-			<img src={logo} alt={owner} class="logo" />
-			<span class="title">{owner}</span>
+			<!-- THE LOGO IS THE WAY HOME.
+			     A rapper install serves one child and a handful of urls, so
+			     "back to the start" is a real, single destination — and the
+			     logo is where everyone already clicks for it. Without the
+			     link it was the one piece of chrome that looked clickable and
+			     did nothing.
+
+			     It points at `landing` — the child's DEFAULT view, the same
+			     place "/" reroutes to — not at "/" itself, so the address bar
+			     ends up naming the view you are looking at. Falls back to "/"
+			     when no landing is known (a child cloned alone), which every
+			     server answers with something. -->
+			<a class="home" href={landing} aria-label="Back to {viewName}">
+				<img src={logo} alt={owner} class="logo" />
+				<span class="title">{owner}</span>
+			</a>
 			<span class="child-name">{viewName}</span>
+			{#if offMountedChild}
+				<!-- The URL is not one this install serves. Said out loud, because
+				     the bar otherwise looks identical on a 404 and a live page. -->
+				<span class="off-mount" title="This rapper serves {mountedChild?.repo} — no route here">
+					not served here
+				</span>
+			{/if}
 		</span>
 
 		<nav class="views">
-			{#each views as v (v.label)}
+			{#each viewButtons as v (v.label)}
 				{#if v.missing}
 					<span class="btn dead" title="No route for this in rapper yet">
 						{v.label}
@@ -405,6 +479,17 @@ const viewRepoUrl = $derived(
 {/if}
 
 <style>
+	/* A dead-end URL under this install. Terracotta = context, not commit:
+	   it reports a fact, it is not something to click. */
+	.off-mount {
+		margin-left: 0.5rem;
+		padding: 0.15rem 0.45rem;
+		border: 1px solid #7c4a32;
+		border-radius: 3px;
+		color: #c97b52;
+		font-size: 0.7rem;
+		white-space: nowrap;
+	}
 	/* A child may own the whole viewport — a map stage is position:fixed, which
 	   ignores a header in normal flow. So the bar is fixed too and declares its
 	   height via --host-chrome for the child to start below. */
@@ -438,6 +523,16 @@ const viewRepoUrl = $derived(
 	.right {
 		justify-content: flex-end;
 	}
+	/* The logo/title pair is a link now; it must still LOOK like the wordmark
+	   it was, so the anchor contributes nothing but a cursor and a hit area. */
+	.home {
+		display: inline-flex;
+		align-items: center;
+		gap: inherit;
+		text-decoration: none;
+		color: inherit;
+	}
+
 	.logo {
 		height: 48px;
 		width: auto;
