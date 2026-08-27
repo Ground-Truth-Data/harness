@@ -81,3 +81,36 @@ describe("currentRepo", () => {
 		expect(currentRepo("/legal", RETREEVER)).toBeUndefined();
 	});
 });
+
+/**
+ * THE FALLBACK IS A TIER'S FACT, NOT A CONSTANT.
+ *
+ * `TIER_HOME` was "/" for everyone. That is right for rapper, which serves its
+ * one child at "/", and WRONG for ReTreever, which answers "/" with a marketing
+ * homepage and serves the search at /who. So standing on rapper's /map and
+ * switching tiers landed on dt-web's landing page — a working page, not the
+ * work. These pin the parameter that fixes it.
+ */
+describe("otherTierPath — the other tier's landing route", () => {
+	it("uses the caller's landing route instead of '/' when nothing matches", () => {
+		expect(otherTierPath("/map", RAPPER, "/who")).toBe("/who");
+		expect(otherTierPath("/legal", RETREEVER, "/somewhere")).toBe("/somewhere");
+	});
+
+	it("uses it for a listed route that has no counterpart", () => {
+		// /where is listed with no otherPath — rapper serves nothing there.
+		expect(otherTierPath("/where", RETREEVER, "/who")).toBe("/who");
+	});
+
+	it("still prefers a real mapping over the landing route", () => {
+		// A landing route must never override a route that DOES map.
+		expect(otherTierPath("/what", RETREEVER, "/who")).toBe("/");
+		expect(otherTierPath("/", RAPPER, "/nope")).toBe("/who");
+	});
+
+	it("falls back to TIER_HOME when no landing route is supplied", () => {
+		// A child cloned alone gets undefined from its absent parent config.
+		expect(otherTierPath("/legal", RETREEVER)).toBe(TIER_HOME);
+		expect(otherTierPath("/legal", RETREEVER, undefined)).toBe(TIER_HOME);
+	});
+});
