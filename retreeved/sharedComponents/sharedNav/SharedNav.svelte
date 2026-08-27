@@ -53,7 +53,6 @@ let {
 	otherTier,
 	tierSlot,
 	otherHost,
-	otherHome,
 	selfRepo = "rapper",
 }: {
 	owner: string;
@@ -71,12 +70,6 @@ let {
 	/** Which half this tier occupies — fixed, so the pill never reorders. */
 	tierSlot?: "left" | "right";
 	otherHost?: string;
-	/** Where the OTHER tier's pill drops you when this page has no counterpart
-	 *  there. Told, not assumed: "/" is where a server answers, not where its
-	 *  work is. ReTreever answers "/" with a marketing homepage and serves its
-	 *  search at /who, so an unmapped route used to land on the landing page.
-	 *  Omitted → TIER_HOME, the old behaviour. */
-	otherHome?: string;
 	/** THIS TIER'S ROUTE TABLE — passed in, never written here. Each parent
 	 *  declares the routes IT serves and where they land on the other tier;
 	 *  this component names no tier, so it cannot know. Empty (a child cloned
@@ -107,7 +100,7 @@ const rightTier = $derived(tierSlot === "left" ? otherTier : tier);
  * current view, and was sitting right there unused while the href came from a
  * constant. No route match → the other tier's home, never a dead pill.
  */
-const otherPath = $derived(otherTierPath(pathname, routes, otherHome));
+const otherPath = $derived(otherTierPath(pathname, routes));
 
 /**
  * THE GITHUB LINK FOLLOWS THE VIEW, NOT THE MOUNT.

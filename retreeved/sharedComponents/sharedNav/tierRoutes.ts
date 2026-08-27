@@ -49,11 +49,7 @@ export type TierRoute = {
 	repo?: string;
 };
 
-/**
- * The LAST-RESORT fallback, when a tier declares no landing route of its own.
- * "/" always resolves to something on any server, which is the only property
- * required of it.
- */
+/** Where a tier sends you when a route has no counterpart. Home always exists. */
 export const TIER_HOME = "/";
 
 /**
@@ -77,26 +73,12 @@ function matchRoute(pathname: string, routes: TierRoute[]): TierRoute | undefine
 /**
  * The other tier's pathname for the page you are on right now.
  *
- * Unlisted route, or a listed one with no counterpart there → the other tier's
- * LANDING route. The pill stays live either way: a switch that silently does
- * nothing reads as broken, and a greyed-out one hides that the other tier is
- * running.
- *
- * WHY `otherHome` IS A PARAMETER AND NOT "/".
- * "/" is where a server answers, not necessarily where its WORK is. rapper
- * serves its one child at "/", so "/" is right for it. ReTreever serves a
- * marketing homepage at "/" and its actual search at /who, so falling back to
- * "/" dropped you on a landing page — a working page, but not the one you were
- * looking at, which is the complaint this whole file exists to answer.
- * Only the tier being LINKED TO knows where its useful landing route is, so
- * the caller passes it; omitted, this degrades to the old "/" behaviour.
+ * Unlisted route, or a listed one with no counterpart there → home. The pill
+ * stays live either way: a switch that silently does nothing reads as broken,
+ * and a greyed-out one hides that the other tier is running.
  */
-export function otherTierPath(
-	pathname: string,
-	routes: TierRoute[],
-	otherHome: string = TIER_HOME,
-): string {
-	return matchRoute(pathname, routes)?.otherPath ?? otherHome ?? TIER_HOME;
+export function otherTierPath(pathname: string, routes: TierRoute[]): string {
+	return matchRoute(pathname, routes)?.otherPath ?? TIER_HOME;
 }
 
 /**
