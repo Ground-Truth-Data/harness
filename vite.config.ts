@@ -1,5 +1,5 @@
 import { sveltekit } from "@sveltejs/kit/vite";
-import { readFileSync } from "node:fs";
+import { existsSync, readFileSync } from "node:fs";
 import { fileURLToPath } from "node:url";
 import { defineConfig } from "vitest/config";
 import { noEscapeHatch } from "./src/lib/guards/noEscapePlugin";
@@ -20,26 +20,40 @@ import { noEscapeHatch } from "./src/lib/guards/noEscapePlugin";
  * disagree with the routes SvelteKit is actually serving, which is exactly how
  * the two drifted before (see VITE_TIER_ROUTES below).
  *
- * The paths themselves come from retreeved/…/childRegistry.ts, the shared
+ * The paths themselves come from retreeved/childRegistry.ts, the shared
  * lookup both tiers read. A child absent from the registry yields an empty
  * table, which degrades to "no counterpart" — the honest answer, and the same
  * one a child cloned alone gets.
  */
-function mountedChildRoutes() {
+/**
+ * WHICH CHILD IS MOUNTED — the one fact, read from the file that decides it.
+ *
+ * svelte.config.js `kit.files.routes` is written by the installer and is the
+ * only statement of which child this rapper serves. Everything downstream — the
+ * route table, the name in the bar — derives from here rather than restating it.
+ */
+function mountedChildRepo(): string | undefined {
 	try {
 		const cfg = readFileSync(
 			fileURLToPath(new URL("./svelte.config.js", import.meta.url)),
 			"utf8",
 		);
 		// The installer's line: routes: "../<Child>/routes"
-		const m = cfg.match(/routes:\s*"\.\.\/([^/"]+)\/routes"/);
-		if (!m) return [];
-		const repo = m[1];
+		return cfg.match(/routes:\s*"\.\.\/([^/"]+)\/routes"/)?.[1];
+	} catch {
+		return undefined;
+	}
+}
+
+function mountedChildRoutes() {
+	try {
+		const repo = mountedChildRepo();
+		if (!repo) return [];
 
 		const reg = readFileSync(
 			fileURLToPath(
 				new URL(
-					"./retreeved/sharedComponents/sharedNav/childRegistry.ts",
+					"./retreeved/childRegistry.ts",
 					import.meta.url,
 				),
 			),
@@ -97,6 +111,32 @@ function mountedChildRoutes() {
 	}
 }
 
+/**
+ * WHERE THE PILL LANDS WHEN THIS PAGE HAS NO MIRROR — derived, not typed.
+ *
+ * THE BUG THIS DELETES
+ * This was the literal "/who". A rapper install carries ONE child, and on a
+ * getCache_OfflineMap install there is no /who anywhere — so standing on "/"
+ * (which has no counterpart, being the child's own landing url) the pill
+ * offered retreever.localhost:5173/who: a page for a child that is not
+ * installed. MEASURED 27 Aug 2026 on a fresh install.
+ *
+ * It is the same fault as the old VITE_OTHER_MOUNT and the hand-written route
+ * table before it: a build-time constant naming one child, while WHICH child is
+ * mounted is stated in svelte.config.js. Three statements of one fact, kept in
+ * step by memory.
+ *
+ * So it comes from the same place the route table does — the mounted child's
+ * first MIRRORED path. Mirrored, not solo: a solo path exists only on this side
+ * by definition, so offering one to the other tier is the very 404 being fixed.
+ * No mirrored paths at all (a child the parent does not serve) → "/", which
+ * every server answers with something.
+ */
+function otherHome(): string {
+	const rows = mountedChildRoutes();
+	return rows[0]?.otherPath ?? "/";
+}
+
 export default defineConfig(({ command }) => {
 /**
  * THE TIER FACTS ARE DEV-ONLY, AND THAT IS ENFORCED HERE.
@@ -114,7 +154,33 @@ export default defineConfig(({ command }) => {
  * child reads `undefined` for each, `otherHost` goes undefined, and the pill
  * renders nothing — the same honest degradation a child cloned alone gets.
  */
-const dev = command === "serve";
+/**
+ * IS THERE A SECOND TIER TO SWITCH TO? — asked of the disk, not of the build mode.
+ *
+ * THE BUG THIS DELETES
+ * The gate was `command === "serve"`, i.e. "is this a dev server". An npm user
+ * runs `npm run dev`, so it was TRUE for them, and the pill rendered a
+ * "retreever" half pointing at retreever.localhost:5173 — a server that exists
+ * only inside this monorepo. MEASURED 27 Aug 2026: connection refused, and a
+ * control offering it anyway.
+ *
+ * `DEV` answers "is this a development build". The question the pill needs is
+ * "does a second tier exist to switch TO", and those coincide only inside the
+ * workspace. An npm install is a dev build with exactly one tier.
+ *
+ * So it is a filesystem fact: a sibling ReTreever checkout, beside rapper, the
+ * way the workspace lays them out. `npm create` produces rapper + its one child
+ * and nothing else, so this is absent there and the pill degrades to nothing —
+ * the same honest degradation a child cloned alone already gets.
+ *
+ * NOT a name written in a child: this is rapper's own config, the file that
+ * already knows the whole layout. noParentNames.test.ts governs CHILDREN.
+ */
+const hasSiblingParent = existsSync(
+	fileURLToPath(new URL("../ReTreever/svelte.config.js", import.meta.url)),
+);
+
+const dev = command === "serve" && hasSiblingParent;
 const tierFacts = dev
 	? {
 		"import.meta.env.VITE_RAPPER_TIER": JSON.stringify("rapper"),
@@ -132,7 +198,7 @@ const tierFacts = dev
 		 * the installer knows which tier that is, so it is injected here beside
 		 * the origin it belongs to.
 		 */
-		"import.meta.env.VITE_OTHER_HOME": JSON.stringify("/who"),
+		"import.meta.env.VITE_OTHER_HOME": JSON.stringify(otherHome()),
 		// Rapper's own default view, for the OTHER tier's fallback. Both tiers
 		// now spell the two views identically, so this is only reached for a
 		// route neither table lists.
@@ -187,6 +253,26 @@ const tierFacts = dev
 		// both servers and only the HIGHLIGHT moves. It used to render "me"
 		// first, so the halves swapped sides between :5173 and :5174 and the
 		// control moved under the cursor.
+		/**
+		 * THE MOUNTED CHILD, NAMED — so the bar stops inferring it from the URL.
+		 *
+		 * THE BUG THIS DELETES
+		 * SharedNav resolved the child with childForPath(pathname), which is
+		 * correct for a parent serving SEVERAL children and wrong for a rapper,
+		 * which serves exactly ONE. MEASURED 27 Aug 2026: a getCache_OfflineMap
+		 * install sitting on "/" showed "ReTreever_where" in the bar, because
+		 * that child claims "/" in the registry and the lookup has no way to
+		 * know only one child is installed here.
+		 *
+		 * A path is a global key; "which child did the installer mount" is a
+		 * fact about THIS process. The second cannot be recovered from the
+		 * first, so it is stated. Absent — a child cloned alone, or a parent
+		 * with many children — the consumer falls back to the path lookup,
+		 * which is right in exactly the case this key is missing.
+		 */
+		"import.meta.env.VITE_MOUNTED_CHILD": JSON.stringify(
+			mountedChildRepo() ?? "",
+		),
 		"import.meta.env.VITE_TIER_SLOT": JSON.stringify("right"),
 	}
 	: {};

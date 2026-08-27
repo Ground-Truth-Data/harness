@@ -27,7 +27,38 @@
  * See ./ParentPill/ParentPill.svelte. The child's own copy was deleted: it had
  * already drifted from ReTreever's in padding, font-size and half-order.
  */
-import ParentPill from "./ParentPill/ParentPill.svelte";
+/**
+ * THE PILL IS LOADED ONLY IF IT IS GOING TO RENDER — a DYNAMIC import.
+ *
+ * THE BUG THIS DELETES
+ * It was a normal top-level import behind `{#if dev}`, and that gate removes
+ * MARKUP, not the component. Svelte compiles a component's style block
+ * whenever the component is imported, so the pill's CSS shipped to production
+ * even though nothing could ever render it. MEASURED 27 Aug 2026 by grepping
+ * a real `vite build`: four `.host-pill` rules sat in the client bundle
+ * (0.DzfUS4CX.css), dead weight on every page a user loads.
+ *
+ * A dev-only control that leaves its styles in the shipped file has only half
+ * vanished, and no gate INSIDE the component can fix that — by the time the
+ * component is compiled the CSS is already emitted. The only thing that
+ * removes a component completely is not importing it.
+ *
+ * `import.meta.env.DEV` is a compile-time constant, so in a production build
+ * this branch is unreachable and Vite drops the dynamic import from the graph
+ * entirely — component, markup and stylesheet together.
+ *
+ * WHY THE PILL AND NOT THE WHOLE BAR. The bar is a child's own dev chrome and
+ * is honest anywhere. The pill claims "the same page is running on the other
+ * tier", which is only ever true on a machine running BOTH dev servers. In a
+ * published npm package there is no other tier, and on Vercel there is no
+ * rapper to jump to — the control would be a link to nowhere.
+ */
+let ParentPill = $state<any>(null);
+if (import.meta.env.DEV) {
+	import("./ParentPill/ParentPill.svelte").then((m) => {
+		ParentPill = m.default;
+	});
+}
 /**
  * THE ROUTE MAP — how the live URL becomes the other tier's URL.
  *
@@ -54,7 +85,7 @@ import type { TierRoute } from "./tierRoutes";
  * who_what's layout was the one loaded. The label named the INSTALL, not the
  * page. A lookup by pathname is the only thing that can be right for both.
  */
-import { childForPath, githubUrl } from "./childRegistry";
+import { childByRepo, childForPath, githubUrl } from "$parent/retreeved/childRegistry";
 
 type View = { href: string; label: string; missing?: boolean };
 
@@ -134,6 +165,26 @@ const rightTier = $derived(tierSlot === "left" ? otherTier : tier);
  * mapping is one-to-one in both directions and the lookup alone is right.
  */
 const otherPath = $derived(otherTierPath(pathname, routes, otherHome));
+
+/**
+ * THE ORIGIN FOLLOWS THE DESTINATION, NOT THE PAGE YOU ARE ON.
+ *
+ * THE BUG THIS DELETES
+ * This was `otherTierOrigin(pathname, ...)` — the origin looked up by the
+ * SOURCE path. That is right whenever the page maps across, because source and
+ * destination are then the same row. It is wrong for every FALLBACK: standing
+ * on "/" of an offline-map install, the destination is /offline (which lives on
+ * the getcache host) but "/" matches no row, so the lookup returned nothing and
+ * the link was built on the retreever origin — retreever.localhost:5173/offline,
+ * which 404s. MEASURED 27 Aug 2026.
+ *
+ * A url is a pair, (origin, path). Resolving each half from a different key is
+ * what let them disagree, so both now come from the destination: the path is
+ * `otherPath`, and the origin is whichever row SERVES that path.
+ */
+const otherOrigin = $derived(
+	otherTierOrigin(otherPath, routes.map((r) => ({ ...r, path: r.otherPath ?? r.path }))),
+);
 
 /**
  * IS THERE ANYWHERE TO GO? The table decides, and
@@ -245,7 +296,27 @@ const unavailable = $derived(declaredUnavailable || probed === "missing");
  * The tier table stays as a middle fallback: a parent may serve a route no
  * child claims, and its own table knows about it.
  */
-const viewChild = $derived(childForPath(pathname));
+/**
+ * THE MOUNTED CHILD — ASKED, NOT INFERRED FROM THE URL.
+ *
+ * THE BUG THIS DELETES
+ * `childForPath` is the right question for a parent serving SEVERAL children:
+ * one layout wraps many children's routes, so only the pathname can say which
+ * you are looking at. A rapper serves exactly ONE child, and there the same
+ * question gives the wrong answer. MEASURED 27 Aug 2026: a getCache_OfflineMap
+ * install sitting on "/" showed "ReTreever_where" in the bar, because that
+ * child claims "/" in the registry — a global key answering a local question.
+ *
+ * So when the mount is KNOWN it wins outright, and the path lookup stays for
+ * the case it was written for. `import.meta.env`, never a bare global: an
+ * absent key reads undefined, so a child cloned alone degrades to the lookup
+ * instead of throwing.
+ */
+const MOUNTED = (import.meta.env as Record<string, string | undefined>)
+	.VITE_MOUNTED_CHILD;
+const mountedChild = $derived(MOUNTED ? childByRepo(MOUNTED) : undefined);
+
+const viewChild = $derived(mountedChild ?? childForPath(pathname));
 const viewRepo = $derived(
 	viewChild?.repo ?? currentRepo(pathname, routes) ?? repo,
 );
@@ -259,6 +330,22 @@ const viewName = $derived(viewChild?.name ?? name);
 
 /** Built from the record, so the org appears once in the whole codebase. */
 const GH = "https://github.com/Ground-Truth-Data";
+
+/**
+ * THE MOUNTING TIER'S OWN RECORD — its link and logo, from the same table.
+ *
+ * This link was the last hand-built url in the bar: `{GH}/{selfRepo}`, with
+ * the org in a private constant and the repo name defaulting to a literal.
+ * rapper is in the registry now (tier: true), so the tier reads its identity
+ * exactly the way every child does.
+ *
+ * Falls back to the interpolation when a tier is not listed — a solo clone
+ * mounting something this table has never heard of still gets a working link.
+ */
+const selfChild = $derived(childByRepo(selfRepo));
+const selfRepoUrl = $derived(
+	selfChild ? githubUrl(selfChild) : `${GH}/${selfRepo}`,
+);
 
 const viewRepoUrl = $derived(
 	viewChild ? githubUrl(viewChild) : `${GH}/${viewRepo}`,
@@ -288,7 +375,7 @@ const viewRepoUrl = $derived(
 		</nav>
 
 		<span class="right">
-			<a class="btn gh" href="{GH}/{selfRepo}" target="_blank" rel="noreferrer">
+			<a class="btn gh" href={selfRepoUrl} target="_blank" rel="noreferrer">
 				<img src={ghIcon} alt="" /> {selfRepo}
 			</a>
 			<!-- The CHILD repo for the view you are on. Derived from the live
@@ -302,16 +389,17 @@ const viewRepoUrl = $derived(
 			     floating in a corner. It is the control that answers "which
 			     tier am I looking at", so it belongs beside the other facts
 			     about the mount rather than hovering over the artwork. -->
+			{#if ParentPill}
 			<ParentPill
 				leftLabel={leftTier}
 				rightLabel={rightTier}
 				current={tier}
 				{unavailable}
 				href={otherHost && !unavailable
-					? (otherTierOrigin(pathname, routes) ?? otherHost) +
-						(otherPath ?? TIER_HOME)
+					? (otherOrigin ?? otherHost) + (otherPath ?? TIER_HOME)
 					: undefined}
 			/>
+			{/if}
 		</span>
 	</header>
 {/if}

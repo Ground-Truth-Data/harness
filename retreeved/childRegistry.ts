@@ -46,6 +46,20 @@ export type ChildRecord = {
 	/** Every pathname this child serves, longest-prefix matched. The child's
 	 *  route folder is the truth; this mirrors it so a lookup needs no fs. */
 	paths: string[];
+	/**
+	 * TRUE for a MOUNTING TIER rather than a mounted child.
+	 *
+	 * rapper is a child of ReTreever in every sense that matters to this table:
+	 * same org, same repo shape, its own logo, and the bar links to it exactly
+	 * as it links to the others. What it is NOT is a thing that serves routes —
+	 * it MOUNTS one. So it belongs in the lookup (the bar was hardcoding the
+	 * literal "rapper" and hand-building its GitHub url) while being excluded
+	 * from every path-driven answer, which is what this flag says.
+	 *
+	 * A tier carries no `paths` for the same reason: whatever it serves came
+	 * from the child it mounted, and that child already has its own row.
+	 */
+	tier?: boolean;
 	/** Paths the child serves that NO parent mirrors — its own standalone
 	 *  preview. Listed so a lookup still identifies the child, and excluded
 	 *  from the tier table so the pill never points at a parent 404. */
@@ -62,27 +76,58 @@ export type ChildRecord = {
  */
 export const CHILDREN: ChildRecord[] = [
 	{
+		/**
+		 * THE TWO TIERS, FIRST — they MOUNT the children below them.
+		 *
+		 * These were the last names still hardcoded in the bar: `selfRepo`
+		 * defaulted to the literal "rapper" and its GitHub href was assembled
+		 * from a private `GH` constant. The one control whose whole job is to
+		 * say WHICH TIER you are on was the only thing not reading this table.
+		 *
+		 * No `paths`: a tier's routes are whichever child it mounted, and that
+		 * child has its own row.
+		 */
+		repo: "rapper",
+		org: "Ground-Truth-Data",
+		name: "rapper",
+		logo: "rapper.webp",
+		paths: [],
+		tier: true,
+	},
+	{
+		repo: "ReTreever",
+		org: "Ground-Truth-Data",
+		name: "ReTreever",
+		logo: "ReTreever_logo_sm.webp",
+		paths: [],
+		tier: true,
+	},
+	{
 		repo: "ReTreever_who_what",
 		org: "Ground-Truth-Data",
 		name: "who_what",
 		logo: "ReTreever_logo_sm.webp",
-		paths: ["/who", "/what"],
+		paths: ["/", "/who", "/what"],
+		/** "/" is this child's own landing url when mounted alone — hooks.ts
+		 *  reroutes it to /who. Solo, so no parent is offered a "/" that is
+		 *  really the parent's own homepage. */
+		soloPaths: ["/"],
 	},
 	{
 		repo: "getCache_OfflineMap",
 		org: "Ground-Truth-Data",
 		name: "offline map",
 		logo: "GC_fly_logo_transparent.webp",
-		paths: ["/offline", "/offline/debug", "/demo"],
-		soloPaths: ["/demo"],
+		paths: ["/", "/offline", "/offline/debug", "/demo"],
+		soloPaths: ["/", "/demo"],
 	},
 	{
 		repo: "getCache_OnlineMap",
 		org: "Ground-Truth-Data",
 		name: "online map",
 		logo: "GC_fly_logo_transparent.webp",
-		paths: ["/map", "/map/debug", "/demo"],
-		soloPaths: ["/demo"],
+		paths: ["/", "/map", "/map/debug", "/demo"],
+		soloPaths: ["/", "/demo"],
 	},
 	{
 		repo: "ReTreever_where",
@@ -111,6 +156,10 @@ export function childForPath(pathname: string): ChildRecord | undefined {
 	let best: ChildRecord | undefined;
 	let bestLen = -1;
 	for (const c of CHILDREN) {
+		// A tier MOUNTS routes, it does not serve them — see ChildRecord.tier.
+		// Without this, rapper's empty `paths` is harmless but ReTreever's would
+		// answer for pages its children own.
+		if (c.tier) continue;
 		for (const p of c.paths) {
 			const hit = pathname === p || pathname.startsWith(p + "/");
 			if (hit && p.length > bestLen) {

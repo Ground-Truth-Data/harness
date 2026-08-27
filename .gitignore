@@ -141,3 +141,7 @@ ios/
 # later and did not get its guard until 27 Aug 2026.
 _children/
 _director/
+
+# 49 MB of basemap tiles + pin art, copied in by getCache_OfflineMap/fetchAssets.sh.
+# NEVER commit: 3587 binary files, and ReTreever/static is their source of truth.
+static/mobileAssets/

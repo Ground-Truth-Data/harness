@@ -1,6 +1,6 @@
 {
 	"name": "@retreever/create-rapper",
-	"version": "0.1.0",
+	"version": "0.1.1",
 	"type": "module",
 	"engines": {
 		"node": ">=22"
@@ -8,6 +8,8 @@
 	"_why": "THE THIN RAPPER. A SvelteKit config, an app shell, and the children — nothing else. Every script and dependency here must be traceable to something this project actually runs. Deps went 91 -> 43 -> 20 across the RAPPER strip; the ones that vanished were auth, payments, Postgres, express, an unused UI kit, Capacitor (no capacitor.config here), Prisma (no schema here), Tailwind/PostCSS (no @tailwind directive anywhere in src/) and the whole eslint/prettier set (no lint config file exists, so `npm run lint` could never have run). See RAPPER.md.",
 	"_why_prepublishOnly": "A PUBLISH THAT CANNOT INSTALL MUST NOT LEAVE THIS MACHINE. gitEr/packTest.sh packs this package, unpacks the tarball into a temp dir with no workspace above it, runs `npm create`, then installs and builds EVERY child, and finally checks that spread-children.mjs can lay all of them down. The tarball is the only artifact a stranger ever sees, and until 27 Aug 2026 nothing tested it: the create path had run once, by hand, on one machine, and had accumulated four defects nobody had noticed — including getCache_OfflineMap being unbuildable from the package outright. WHY prepublishOnly AND NOT prepack: packTest.sh itself runs `npm pack`, so hanging it off prepack would recurse. prepublishOnly runs first and to completion, and its inner pack cleans up after itself before the outer one starts. It also runs ONLY on publish, never on a plain `npm pack` or an install, which is what keeps it off contributors' machines. COST: several minutes and roughly 2GB of free disk, because every child gets a real node_modules. That is the price of knowing. `npm publish --ignore-scripts` skips it, and doing so means publishing something no one has proven installs.",
 	"scripts": {
+		"_why_predev": "RAPPER SERVES ITS OWN ASSETS. The mounted child asks for /mobileAssets/... — pins, the worldBase basemap tiles, the map glyphs — and rapper had no static/ at all, so every one of them 404'd here while working under ReTreever. MEASURED 27 Aug 2026: pin_default_sm.webp, worldBase/base/tiles/6/18/23.pbf and glyphs/Noto Sans Regular/0-255.pbf were all 404 on 5174 and 200 on 5173, same URL, same bytes on disk. A pin rendered as a broken-image square. The child cannot reach across into ReTreever for them — it names no parent, and rapper/src/lib/guards/noEscapePlugin.ts throws on the raw climb at build time — so the parent must FILL THE SEAM, exactly as it does for $parent/retreeved. fetchAssets.sh is the child's own documented mechanism (see its ASSETS.md); it was simply never called from here. Running it on predev means a fresh clone cannot start a server that silently serves nothing. The 49 MB it copies is gitignored: ReTreever/static/mobileAssets stays the single source of truth.",
+		"predev": "bash ../getCache_OfflineMap/fetchAssets.sh static/mobileAssets",
 		"dev": "vite dev --port 5174",
 		"prebuild": "svelte-kit sync",
 		"build": "vite build",
