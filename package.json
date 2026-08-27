@@ -13,8 +13,8 @@
 		"preview": "vite preview",
 		"check": "svelte-kit sync && svelte-check --tsconfig ./tsconfig.json",
 		"test:unit": "vitest",
-		"prepack": "node bin/vendor-children.mjs",
-		"postpack": "node bin/clean-children.mjs"
+		"prepack": "node ../rapper_director/bin/vendor-children.mjs",
+		"postpack": "node ../rapper_director/bin/clean-children.mjs"
 	},
 	"dependencies": {
 		"@mapbox/vector-tile": "^3.0.0",
@@ -71,13 +71,13 @@
 		"getcache"
 	],
 	"bin": {
-		"create-rapper": "./bin/create.mjs"
+		"create-rapper": "./_director/bin/create.mjs"
 	},
 	"files": [
-		"bin/",
 		"src/",
 		"retreeved/",
 		"_children/",
+		"_director/",
 		"svelte.config.js",
 		"vite.config.ts",
 		"tsconfig.json",
