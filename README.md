@@ -1,4 +1,6 @@
-<img width="120" align="right" alt="rapper" src="https://github.com/user-attachments/assets/53029e8e-815f-4fb2-8a35-b97e71beb84e" />
+<img width="120" align="left" alt="rapper" src="https://github.com/user-attachments/assets/53029e8e-815f-4fb2-8a35-b97e71beb84e" />
+<br/>
+<span/>
 
 # rapper
 
