@@ -4,45 +4,63 @@
 
 ```
 rapper       THIS REPO. A thin SvelteKit app that mounts ONE child.
-  └── child  a flat  lib/ + routes/  folder, INSTALLED as a package.
+  └── child  a flat  lib/ + routes/  folder, sitting BESIDE rapper.
 ```
 
 ## Getting a child
 
-A child is its own repository. It is not inside this one — `src/lib/` is empty
-on purpose, and four copies used to live there until 26 Aug 2026, by which
-point they were 62 files behind the real repos.
+A child is its own repository. It is not inside this one — four copies used to
+live under `src/lib/` until 26 Aug 2026, by which point they were 62 files
+behind the real repos. What is left in `src/lib/` is rapper's own handful of
+files: `core/base.css`, `guards/noEscapePlugin.ts` and the mobile stylesheets.
 
-One command clones it, installs it and mounts it:
+One command sets up a project around a child:
 
 ```bash
-./useChild.sh offline      # the offline basemap engine
-./useChild.sh online       # the Mapbox online map
-./useChild.sh where        # the Where page
-./useChild.sh whowhat      # the Who / What search
+npm create @retreever/rapper my-tool
 ```
 
-Run it with no argument to see the four and which one is mounted. Run it again
-with a different name to switch — installing and switching are the same
-operation, so there is only one command to know.
+It asks which component you want, then writes the project around that answer.
+What lands on disk is a flat pair of folders:
 
-**One rapper, one child.** The script uninstalls the previous child, so
-`package.json` always answers "what is mounted here?" honestly. Pass `--keep`
-if you deliberately want more than one installed.
+```
+my-tool/
+├── package.json            <- deps installed HERE, at the root
+├── rapper/                 <- the parent
+└── getCache_OfflineMap/    <- the child, SIBLING of rapper
+```
 
-It prints the URLs the mounted child answers on, which is not always `/` — the
+**One rapper, one child.** A second child means a second install, in a second
+folder. `svelte.config.js` `kit.files.routes` names the one that is mounted, so
+the config always answers "what is mounted here?" honestly.
+
+The mounted child answers on its own routes, which are not always `/` — the
 offline map serves `/offline`, `/demo` and `/debug/map` and nothing at the root.
 
-### Why a package and not a path
+### Why the child is a SIBLING, and why the install is at the root
 
-`svelte.config.js` `files.routes` names the installed path. **Install it — do
-not point at the folder.** Aliasing `files.routes` straight at
-`../getCache_OfflineMap/routes` looks equivalent and is not: the child's own
-`import "maplibre-gl"` then resolves from outside rapper, walks up past the
-parent directory, and never reaches `rapper/node_modules`. Every bare import in
-the child fails even though rapper declares and installs all of them. Being
-inside `node_modules/` is what puts the child in the resolution chain — which
-is why each child carries a `package.json`.
+The adjacency is not a stylistic choice — it is what the alias resolves against.
+`svelte.config.js` declares `"$parent/siblings": "../"`, so the child must sit
+one level up from rapper. Nest it and `../` points at the wrong folder and every
+import inside it fails.
+
+That layout then decides where `node_modules` has to go. **Install at the
+project root — not inside `rapper/`.** Node resolves a bare specifier by walking
+UP from the importing file looking for `node_modules`. The child is a sibling of
+rapper, so walking up from `ReTreever_who_what/lib/cn.ts` reaches the project
+root and stops; it never descends into `rapper/node_modules`. Installing inside
+rapper therefore satisfies rapper's own imports and none of the child's.
+
+MEASURED: with the deps only in `rapper/package.json`, `clsx` installed fine and
+the build still died on "Rollup failed to resolve import clsx from
+ReTreever_who_what/lib/cn.ts".
+
+The root is the one directory that is an ancestor of BOTH — exactly the role
+`fetch/` plays in the development workspace. So rapper's dependencies and the
+child's are merged and declared there, and installed once, at the top. The
+child's pins win on conflict: they are the versions its code was tested against,
+and a child that silently borrowed its parent's version is a hole that only
+shows up once it is lifted out.
 
 ## Running a child
 
@@ -63,23 +81,27 @@ AGPL. Without them the map renders blank and the BUILD fails outright
 (SvelteKit walks `static/` and dies on the dangling symlinks).
 
 ```bash
-node_modules/@ground-truth/getcache-offlinemap/fetchAssets.sh
+getCache_OfflineMap/fetchAssets.sh
 ```
 
-See the child's `ASSETS.md`. With no local source for them, ask
+See that child's own `ASSETS.md`. With no local source for them, ask
 Ground Truth Data for the asset bundle.
 
 ## The rules that keep a child liftable
 
-Enforced by `childBoundary.test.ts`, which discovers children by **shape** —
-any folder containing a `lib/` — so a new child is governed the day it is
-created, whoever owns it.
+The guards discover children by **shape** — any folder containing a `lib/` — so
+a new child is governed the day it is created, whoever owns it.
 
-1. **A child never names itself through `$harness`.** Inside a child, imports
-   are relative. `$harness` exists only because the vite config defines it, and
-   it will not follow the child out of this repo.
-2. **A child never imports another child.** Two children that import each other
-   are one child wearing two folders.
+1. **A child never names its parent.** Inside a child, imports are relative, or
+   they go through an alias the parent fills in. rapper defines `$parent`,
+   `$parent/*`, `$parent/siblings` and `$parent/siblings/*` — and nothing else.
+   A raw `../../rapper/…` climb NAMES rapper, so the ReTreever side dies and the
+   switch with it; `noEscapePlugin` throws on it.
+2. **A child never imports another child** except where its own `deps.json`
+   declares it. Two children that import each other freely are one child wearing
+   two folders. The declared exception is read, never guessed: `ReTreever_where`
+   imports two modules from `getCache_OnlineMap`, so the installer copies that
+   companion in beside it — present to satisfy imports, not mounted.
 3. **A child never touches `$lib` / `$tinyStore` / `$mobRoutes`.** That is
    ReTreever's proprietary side.
 4. **A child is SELF-CONTAINED.** There is no shared middle folder any more.
@@ -90,7 +112,9 @@ created, whoever owns it.
    worth the release ceremony.
 5. **No relative path climbs out of the child.**
 
-The guards live in ReTreever now — it is the only tier that can see both sides:
+The guards live in ReTreever — it is the only tier that can see both sides, so
+they are not in this repo and a contributor cloning rapper does not receive
+them:
 
 ```bash
 npx vitest run src/lib/core/harnessGuards/   # from the ReTreever repo
@@ -110,7 +134,6 @@ else.
 
 Do NOT add `$lib` or `$generated` back to make an import resolve. That is the
 one change that quietly re-couples a child to code it will never ship with.
-`harnessIsolation.test.ts` fails if either returns.
 
 ## Where changes go
 
@@ -121,32 +144,34 @@ Children currently published:
 
 - <https://github.com/Ground-Truth-Data/getCache_offlineMap>
 - <https://github.com/Ground-Truth-Data/getCache_OnlineMap>
+- <https://github.com/Ground-Truth-Data/ReTreever_where>
+- <https://github.com/Ground-Truth-Data/ReTreever_who_what>
 
 ## The shell
 
-`src/routes/+layout.svelte` is the whole rapper UI: the owning product's logo,
-the child's name, one link per view, and the **naked** switch. It reads a single
-`CHILD` object that the installer writes.
+rapper has no `src/routes/` of its own. It used to: a shell layout plus a
+two-line mount page per view, whose whole job was to import the child's real
+page. That indirection is deleted. The child already carries its own `routes/`
+so it can be lifted into its own repo whole, and `kit.files.routes` points
+SvelteKit straight at it — one child, one route tree, no forwarding pages that
+can drift out of sync with what they forward to.
 
-Branding is RAPPER's job, never the child's. A child that imported a logo would
+So the shell is a component the child's layout renders:
+`retreeved/sharedComponents/sharedNav/SharedNav.svelte`. It is the owning
+product's logo, the child's name, one link per view, and the pill that jumps to
+the other tier.
+
+Branding is RAPPER's job, never the child's — the owner name and logo arrive as
+PROPS, so the component names no product. A child that imported a logo would
 carry its owner's identity into a repo meant to be handed out.
 
-`src/routes/` also holds a two-line mount page per view. SvelteKit only serves
-pages found under `src/routes/`, but a child carries its own `routes/` so it can
-be lifted whole — so the child owns the page and rapper owns the line naming the
-URL it answers on.
-
-The whole header sits inside `{#if import.meta.env.DEV}`, so a production build
+The whole bar sits inside `{#if import.meta.env.DEV}`, so a production build
 does not hide it — it never emits it.
 
-### naked
-
-`app.css` lives in ReTreever and stays there; it is the style moat, and the one
-thing that must never be duplicated. A child inherits design tokens through the
-cascade when a host provides them, and looks plain when nothing does. **naked**
-resets those tokens to `initial` so you can see what a contractor sees.
-
-The switch REMOVES, it does not grant. Off is the honest view.
+`retreeved/` is GENERATED from ReTreever by `gitEr/syncRetreeved.sh`. Do not
+edit it here; edit the source in ReTreever. `app.css` and `app.unique.css` are
+deliberately NOT copied — they are the half the tiers must disagree on, which is
+how a page declares its tier.
 
 ## Known rough edges
 

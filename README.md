@@ -9,7 +9,6 @@ component repos on its own:
 - [getCache_OnlineMap](https://github.com/Ground-Truth-Data/getCache_OnlineMap)
 - [ReTreever_who_what](https://github.com/Ground-Truth-Data/ReTreever_who_what)
 - [ReTreever_where](https://github.com/Ground-Truth-Data/ReTreever_where)
-- [ReTreever_ratings](https://github.com/Ground-Truth-Data/ReTreever_ratings)
 
 ## Get started
 
@@ -51,13 +50,14 @@ what the `$parent/siblings` alias resolves against:
 
 ```
 my-tool/
+├── package.json            <- deps installed HERE, at the root
 ├── rapper/                 <- the parent
 └── getCache_OfflineMap/    <- the component, SIBLING of rapper
 ```
 
 > **The offline map needs ~50 MB of assets first.** Tiles, glyphs and demo
 > imagery are not in git. Run `getCache_OfflineMap/fetchAssets.sh`, or
-> ask Ground Truth Data for the bundle. See `ASSETS.md`.
+> ask Ground Truth Data for the bundle. See that folder's own `ASSETS.md`.
 
 ### Developing rapper itself
 
@@ -69,22 +69,32 @@ Clone the components beside it, not inside it — see CONTRIBUTING.md.
 
 ## How it works
 
-**One rapper, one child.** A child is source code, not an app — a flat `lib/`
-+ `routes/` folder with no framework and no `node_modules`. It has nothing to
-`npm run dev` on its own; rapper is what makes it runnable. A second child
-means a second install, in a second folder.
+**One rapper, one component.** A component is source code, not an app — a flat
+`lib/` + `routes/` folder with no framework and no `node_modules`. It has
+nothing to `npm run dev` on its own; rapper is what makes it runnable. A second
+component means a second install, in a second folder.
 
-`src/routes/+layout.svelte` is the whole rapper UI, and it only appears in dev.
-Branding is rapper's job, never the child's.
+rapper has no `src/routes/` of its own. `kit.files.routes` in `svelte.config.js`
+points SvelteKit straight at the mounted component's own `routes/`, so there is
+one route tree and no forwarding pages to drift. The dev shell — logo, the
+component's name, one link per view — is a component of rapper's that the
+mounted routes render, and it only appears in dev. Branding is rapper's job,
+never the component's.
+
+Dependencies are declared and installed at the PROJECT ROOT, not inside
+`rapper/`. Node resolves bare imports by walking up, and the component is
+rapper's sibling — so the root is the one folder that is an ancestor of both.
+That is why `npm install` runs in `my-tool/` and not in `my-tool/rapper/`.
 
 ## Contributing
 
 You work in rapper, but a child's code belongs to the child's repo. Send
 changes as a PR against rapper unless told otherwise.
 
-Children must stay **liftable** — self-contained, no imports of each other, no
-reach into ReTreever's private side. `childBoundary.test.ts` enforces this and
-finds children by shape, so a new one is governed the day it is created.
+Components must stay **liftable** — self-contained, no reach into ReTreever's
+private side, and no import of a sibling that the component's own `deps.json`
+does not declare. Guard tests in the ReTreever repo enforce this and find
+components by shape, so a new one is governed the day it is created.
 
 See **[CONTRIBUTING.md](CONTRIBUTING.md)** for the full rules and the reasoning
 behind them.
