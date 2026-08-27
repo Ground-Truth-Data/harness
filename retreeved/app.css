@@ -8,11 +8,19 @@
 /* DIVERGES ON PURPOSE — same filename in rapper, different contents.
    Last of the token imports so its values win on source order. */
 @import '../src/app.unique.css';
-/* The children are FLAT — siblings of ReTreever in fetch/, not nested
-   inside rapper/src/lib any more (moved 25 Aug 2026). A CSS @import is a
-   plain relative path: the $parent/siblings alias rewrites JS imports only and
-   never touches this line, so it had to be repointed by hand. */
-@import '../../getCache_OnlineMap/lib/map.css';
+/* map.css IS NOT IMPORTED HERE ANY MORE — the child imports it itself.
+   It used to be `@import '../../getCache_OnlineMap/lib/map.css'`: a raw climb
+   from a parent sideways INTO a child. Children reach UP to a parent through
+   $parent; a parent naming a child inverts that, and it made the parent
+   unbuildable unless getCache_OnlineMap happened to be on disk — which broke
+   installing a single child from the npm package.
+   It now lives at the top of getCache_OnlineMap/lib/mapPage.svelte, next to
+   the mapbox-gl vendor import it belongs with. Do not re-add it here.
+
+   THIS FILE IS THE SOURCE. syncRetreeved.sh atomically replaces
+   rapper/retreeved/ from this directory, so editing the rapper copy alone is
+   undone by the next sync (MEASURED: it reverted three times on 26 Aug 2026
+   before the edit was made here). */
 /* ── VENDOR MAP CSS — ALWAYS `layer(vendor)`, NEVER BARE ────────────────────
    BOTH stylesheets ship because BOTH renderers are live: Mapbox on the online
    map, MapLibre on the offline one (/mobile/offlinev4). Their class namespaces
