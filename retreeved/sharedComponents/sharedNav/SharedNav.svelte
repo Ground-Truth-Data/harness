@@ -38,6 +38,7 @@ import ParentPill from "./ParentPill/ParentPill.svelte";
 import {
 	TIER_HOME,
 	currentRepo,
+	otherTierOrigin,
 	otherTierPath,
 	probeOtherSide,
 	servesOtherSide,
@@ -142,9 +143,32 @@ const otherPath = $derived(otherTierPath(pathname, routes, otherHome));
  * claims nothing and the pill behaves as it always did rather than greying out
  * every page.
  */
-const declaredUnavailable = $derived(
-	routes.length > 0 && !servesOtherSide(pathname, routes),
-);
+/**
+ * NOTHING TO SWITCH TO — but the RETURN TRIP is never in doubt.
+ *
+ * MEASURED 27 Aug 2026 on `:5174/offline`, reached by walking there from the
+ * other tier: the pill back was GREYED. Two independent causes, both fixed
+ * here rather than in one of them.
+ *
+ * The probe was one (see the effect below). This was the other: `routes` is
+ * the table the MOUNTING PARENT injected, and rapper injects a table listing
+ * only the child it was configured with. Swap the mounted child and the table
+ * still describes the old one, so /offline was absent and the pill greyed on
+ * a page that plainly exists.
+ *
+ * The registry answers this without a table: if a child serves this pathname,
+ * the other tier — which is where children come FROM — has it too. So the
+ * lookup vetoes a "declared unavailable" that only reflects a stale injection.
+ *
+ * `tierSlot === "right"` is the mounting tier, named without naming it. Its
+ * return trip is never unavailable: it is standing on the page.
+ */
+const declaredUnavailable = $derived.by(() => {
+	if (tierSlot === "right") return false;
+	if (routes.length === 0) return false;
+	if (childForPath(pathname)) return false;
+	return !servesOtherSide(pathname, routes);
+});
 
 /**
  * WHAT THE OTHER TIER ACTUALLY ANSWERS — the table above cannot know it.
@@ -284,7 +308,8 @@ const viewRepoUrl = $derived(
 				current={tier}
 				{unavailable}
 				href={otherHost && !unavailable
-					? otherHost + (otherPath ?? TIER_HOME)
+					? (otherTierOrigin(pathname, routes) ?? otherHost) +
+						(otherPath ?? TIER_HOME)
 					: undefined}
 			/>
 		</span>

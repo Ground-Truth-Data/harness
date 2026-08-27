@@ -1,4 +1,5 @@
 import { sveltekit } from "@sveltejs/kit/vite";
+import { readFileSync } from "node:fs";
 import { fileURLToPath } from "node:url";
 import { defineConfig } from "vitest/config";
 import { noEscapeHatch } from "./src/lib/guards/noEscapePlugin";
@@ -10,6 +11,91 @@ import { noEscapeHatch } from "./src/lib/guards/noEscapePlugin";
 // route doesn't exist, and `start_url: "/mobile"` points at a deleted prefix.
 // It silently emitted an unused service worker until a 3 MB chunk crossed
 // workbox's 2 MiB precache limit and turned it into a hard build failure.
+
+/**
+ * WHICH CHILD IS MOUNTED, AND WHAT IT SERVES — read, never restated.
+ *
+ * `kit.files.routes` in svelte.config.js is the ONE line that chooses a child;
+ * the installer writes it. Parsing it here means the route table cannot
+ * disagree with the routes SvelteKit is actually serving, which is exactly how
+ * the two drifted before (see VITE_TIER_ROUTES below).
+ *
+ * The paths themselves come from retreeved/…/childRegistry.ts, the shared
+ * lookup both tiers read. A child absent from the registry yields an empty
+ * table, which degrades to "no counterpart" — the honest answer, and the same
+ * one a child cloned alone gets.
+ */
+function mountedChildRoutes() {
+	try {
+		const cfg = readFileSync(
+			fileURLToPath(new URL("./svelte.config.js", import.meta.url)),
+			"utf8",
+		);
+		// The installer's line: routes: "../<Child>/routes"
+		const m = cfg.match(/routes:\s*"\.\.\/([^/"]+)\/routes"/);
+		if (!m) return [];
+		const repo = m[1];
+
+		const reg = readFileSync(
+			fileURLToPath(
+				new URL(
+					"./retreeved/sharedComponents/sharedNav/childRegistry.ts",
+					import.meta.url,
+				),
+			),
+			"utf8",
+		);
+		// The record for that repo, then the `paths` array inside it.
+		const recIdx = reg.indexOf(`repo: "${repo}"`);
+		if (recIdx === -1) return [];
+		// Bound every later match to THIS record. Without the bound, a record with
+		// no soloPaths of its own silently borrowed the next record's.
+		const recEnd = reg.indexOf("\n\t},", recIdx);
+		const rec = reg.slice(recIdx, recEnd === -1 ? undefined : recEnd);
+		const pathsMatch = rec.match(/paths:\s*\[([^\]]*)\]/);
+		if (!pathsMatch) return [];
+		const paths = [...pathsMatch[1].matchAll(/"([^"]+)"/g)].map((x) => x[1]);
+
+		// Paths the child serves that no parent mirrors — its standalone preview.
+		// Kept out of the table so the pill never offers a parent route that 404s.
+		const soloMatch = rec.match(/soloPaths:\s*\[([^\]]*)\]/);
+		const solo = soloMatch
+			? [...soloMatch[1].matchAll(/"([^"]+)"/g)].map((x) => x[1])
+			: [];
+
+		// The two tiers spell every mirrored view identically, so each row is the
+		// identity. A path that is only the child's own ("/") maps nowhere and is
+		// dropped rather than pointed at a parent route that does not exist.
+		/**
+		 * THE OTHER TIER IS THREE SITES, SPLIT BY HOSTNAME — not one origin.
+		 *
+		 * MEASURED 27 Aug 2026: the pill on /offline resolved the path correctly
+		 * and then aimed it at the retreever host, where /offline 404s. That tier
+		 * serves /offline on its getcache host and /who on its retreever one, so
+		 * VITE_OTHER_ORIGIN — a single value — is right for at most half its
+		 * routes.
+		 *
+		 * Which host a route lives on is the mounting parent's knowledge, so it is
+		 * stated here, beside the origin it qualifies, and rides along per row.
+		 * Rows without one fall back to VITE_OTHER_ORIGIN.
+		 */
+		const GETCACHE_ORIGIN = "http://getcache.localhost:5173";
+		const onGetCacheSite = (p: string) =>
+			p.startsWith("/offline") || p.startsWith("/map");
+
+		return paths
+			.filter((p) => p !== "/" && !solo.includes(p))
+			.map((p) => ({
+				path: p,
+				otherPath: p,
+				repo,
+				...(onGetCacheSite(p) ? { otherOrigin: GETCACHE_ORIGIN } : {}),
+			}));
+	} catch {
+		// A dev-only convenience must never be the thing that stops a build.
+		return [];
+	}
+}
 
 export default defineConfig(({ command }) => {
 /**
@@ -73,27 +159,28 @@ const tierFacts = dev
 		 * per view that child serves. The installer writes it, as it writes
 		 * kit.files.routes.
 		 */
+		/**
+		 * THIS TIER'S ROUTE TABLE — DERIVED FROM THE MOUNTED CHILD, not typed out.
+		 *
+		 * THE BUG THIS DELETES
+		 * These rows were written by hand, and they described whichever child was
+		 * installed WHEN SOMEBODY LAST EDITED THEM. `kit.files.routes` in
+		 * svelte.config.js separately names the child actually mounted, so there
+		 * were two statements of one fact and nothing holding them together.
+		 *
+		 * MEASURED 27 Aug 2026: with getCache_OfflineMap mounted and serving
+		 * /offline with a 200, this table still listed only /who and /what. The
+		 * bar therefore concluded /offline had no counterpart and GREYED the pill
+		 * on a page that was plainly working — "there's no reason why it would be
+		 * grayed out", and there wasn't.
+		 *
+		 * So the child is read from svelte.config.js — the file that DECIDES it —
+		 * and its paths come from the shared registry. Swapping the mount now
+		 * changes the table automatically, because they are the same fact read
+		 * once instead of two facts kept in step by memory.
+		 */
 		"import.meta.env.VITE_TIER_ROUTES": JSON.stringify(
-			JSON.stringify([
-				/**
-				 * ONE-TO-ONE NOW, which is what deletes the query stamp.
-				 *
-				 * This was a single row — "/" → "/who" — because the child
-				 * served both its views from "/". Two views sharing one url is
-				 * a many-to-one mapping, and a many-to-one mapping HAS NO
-				 * INVERSE: standing on "/", nothing in the url said whether you
-				 * had come from /who or /what, so switching back always guessed
-				 * /who. That guess was patched with a `?rtvrFrom=` stamp.
-				 *
-				 * The child now serves /who and /what itself, so each row is a
-				 * bijection and the return trip is just a table lookup. The
-				 * stamp is deleted rather than kept as a belt: carrying state
-				 * beside a url that can already express it is the bug, not the
-				 * fix.
-				 */
-				{ path: "/who", otherPath: "/who", repo: "ReTreever_who_what" },
-				{ path: "/what", otherPath: "/what", repo: "ReTreever_who_what" },
-			]),
+			JSON.stringify(mountedChildRoutes()),
 		),
 		// Which half of the pill this tier occupies. FIXED per tier —
 		// retreever left, rapper right — so the control renders identically on

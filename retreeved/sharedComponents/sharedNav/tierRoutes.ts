@@ -47,6 +47,17 @@ export type TierRoute = {
 	otherPath?: string;
 	/** The child repo backing this view, for the GitHub link. */
 	repo?: string;
+	/**
+	 * The ORIGIN serving `otherPath`, when it is not the other tier's default.
+	 *
+	 * A tier is not always one server. MEASURED 27 Aug 2026: the pill on
+	 * `:5174/offline` correctly produced `/offline`, then pointed it at
+	 * retreever.localhost:5173 — where that path 404s, because /offline is
+	 * served on the getcache host and only /who on the retreever one. One
+	 * injected origin per tier cannot address a tier that splits by hostname,
+	 * so a row that lives on a different host says which.
+	 */
+	otherOrigin?: string;
 };
 
 /**
@@ -97,6 +108,19 @@ export function otherTierPath(
 	otherHome: string = TIER_HOME,
 ): string {
 	return matchRoute(pathname, routes)?.otherPath ?? otherHome ?? TIER_HOME;
+}
+
+/**
+ * The origin serving this page on the other tier, when the row names one.
+ *
+ * Undefined means "the tier's default origin", which the caller already has.
+ * See TierRoute.otherOrigin for why a tier can need more than one.
+ */
+export function otherTierOrigin(
+	pathname: string,
+	routes: TierRoute[],
+): string | undefined {
+	return matchRoute(pathname, routes)?.otherOrigin;
 }
 
 /**

@@ -110,7 +110,7 @@ const config = {
          * does not error on a missing route tree, it silently serves nothing.
          */
         files: {
-            routes: "../ReTreever_who_what/routes",
+            routes: "../getCache_OfflineMap/routes",
             /**
              * THE CHILD'S PARAM MATCHERS, for the same reason as its routes.
              *
@@ -124,7 +124,7 @@ const config = {
              * The installer writes this beside `routes`; a child that declares
              * no matchers simply has an empty folder.
              */
-            params: "../ReTreever_who_what/params",
+            params: "../getCache_OfflineMap/params",
             /**
              * THE CHILD'S UNIVERSAL HOOKS, beside its routes and matchers.
              *
@@ -135,7 +135,7 @@ const config = {
              * without this line the hook silently never runs and "/" 404s.
              */
             hooks: {
-                universal: "../ReTreever_who_what/hooks",
+                universal: "../getCache_OfflineMap/hooks",
             },
         },
     },
