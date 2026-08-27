@@ -19,11 +19,48 @@
        ./lib/core/base.css                          — MISSING
        ../../rapper/src/lib/getCache_OnlineMap/…    — MISSING
 
-   THE POINT IS NOT TO REPAIR IT. rapper deliberately shed Tailwind, PostCSS
-   and ~20 other dependencies in the RAPPER strip (see package.json `_why`);
-   re-adding them to render a dev harness would undo that on purpose. And a
+   ⚠️ CORRECTED 27 Aug 2026 — THE CONCLUSION HOLDS, THE REASON DOES NOT.
+
+   The line above reading
+
+       @import 'tailwindcss'                        — not a rapper dependency
+
+   was true when written and is FALSE now. Tailwind is a rapper dependency, and
+   a load-bearing one. MEASURED 27 Aug 2026:
+
+       rapper/package.json declares FIVE — tailwindcss, @tailwindcss/postcss,
+       postcss, tailwind-merge, tailwindcss-animate
+       rapper/src/lib/core/base.css:5   @import 'tailwindcss';
+       retreeved/app.css:5              @import 'tailwindcss';
+       ReTreever_who_what/lib/cn.ts     twMerge(clsx(...))
+       rapper/postcss.config.js         plugins: { "@tailwindcss/postcss": {} }
+
+   and gitEr/packTest.sh built all four children green from the tarball, which
+   it could not do against a missing `tailwindcss`. The 25 Aug ENOENT above was
+   real on the day; it no longer reproduces.
+
+   The stale claim is inherited from package.json `_why`, which justified the
+   strip with "no @tailwind directive anywhere in src/". That sentence is TRUE
+   AND MEANINGLESS: Tailwind v4 — the version installed — replaced `@tailwind
+   base;` with `@import 'tailwindcss'`. The check looked for v3 syntax in a v4
+   project, found nothing, and read absence as proof. Same shape as RULE 7's
+   stripComment() cutting at `//`, which is also inside `https://`: a check that
+   cannot fire, reported as a pass. See package.json `_why_tailwind_correction`.
+
+   KEPT, NOT DELETED, because the wrong sentence is the useful part — anyone
+   who greps `@tailwind` and finds nothing is about to repeat it.
+
+   THE POINT IS STILL NOT TO REPAIR IT, on the surviving half of the argument: a
    child does not need ReTreever's stylesheet — it needs the TOKENS its own
-   components read. There are 19 of those, listed by grepping every var() the
+   components read. That was always the stronger reason, and it does not depend
+   on what rapper does or does not install. What is no longer a reason is "the
+   dependency is missing"; it is present, and re-adding nothing is required.
+
+   ORIGINAL TEXT, PRESERVED: "THE POINT IS NOT TO REPAIR IT. rapper deliberately
+   shed Tailwind, PostCSS and ~20 other dependencies in the RAPPER strip (see
+   package.json `_why`); re-adding them to render a dev shell would undo that on
+   purpose. And a child does not need ReTreever's stylesheet — it needs the
+   TOKENS its own components read. There are 19 of those, listed by grepping every var() the
    four children reference against what ReTreever defines. They are resolved to
    literal values below, so this file imports nothing and cannot rot the same
    way.
@@ -49,7 +86,7 @@
 	   Resolved to literals. In ReTreever these live in
 	   src/lib/mobile/styles/mobile.css, which rapper does not carry — copying
 	   the three values is cheaper and more honest than importing a mobile
-	   stylesheet into a harness that runs no mobile app.
+	   stylesheet into a parent that runs no mobile app.
 
 	   --rt-fg is NOT here: it is one of the whites, so app.unique.css owns it
 	   and sets it violet. Defining it here would silently win and kill the

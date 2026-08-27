@@ -324,7 +324,7 @@
 
    This lives here, in the global sheet, because it has to. It used to live
    only in GoldButton.svelte's scoped <style>, under src/lib/mobile/ — the
-   proprietary half of the open-core split — so admin, the harness and dt-web could
+   proprietary half of the open-core split — so admin, rapper and dt-web could
    not reach it and each hand-rolled a flat yellow fill instead. That is why
    the flat version kept coming back; a convention nobody can import is not a
    convention. GoldButton.svelte now consumes this class rather than
@@ -435,7 +435,7 @@
 }
 
 
-/* ReTreever navbar is h-20 (5rem); override the harness's 4rem map height default */
+/* ReTreever navbar is h-20 (5rem); override rapper's 4rem map height default */
 :root {
   --map-height-offset: 5rem;
   color-scheme: dark;
