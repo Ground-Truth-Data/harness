@@ -6,6 +6,7 @@
 		"node": ">=22"
 	},
 	"_why": "THE THIN RAPPER. A SvelteKit config, an app shell, and the children — nothing else. Every script and dependency here must be traceable to something this project actually runs. Deps went 91 -> 43 -> 20 across the RAPPER strip; the ones that vanished were auth, payments, Postgres, express, an unused UI kit, Capacitor (no capacitor.config here), Prisma (no schema here), Tailwind/PostCSS (no @tailwind directive anywhere in src/) and the whole eslint/prettier set (no lint config file exists, so `npm run lint` could never have run). See RAPPER.md.",
+	"_why_prepublishOnly": "A PUBLISH THAT CANNOT INSTALL MUST NOT LEAVE THIS MACHINE. gitEr/packTest.sh packs this package, unpacks the tarball into a temp dir with no workspace above it, runs `npm create`, then installs and builds EVERY child, and finally checks that spread-children.mjs can lay all of them down. The tarball is the only artifact a stranger ever sees, and until 27 Aug 2026 nothing tested it: the create path had run once, by hand, on one machine, and had accumulated four defects nobody had noticed — including getCache_OfflineMap being unbuildable from the package outright. WHY prepublishOnly AND NOT prepack: packTest.sh itself runs `npm pack`, so hanging it off prepack would recurse. prepublishOnly runs first and to completion, and its inner pack cleans up after itself before the outer one starts. It also runs ONLY on publish, never on a plain `npm pack` or an install, which is what keeps it off contributors' machines. COST: several minutes and roughly 2GB of free disk, because every child gets a real node_modules. That is the price of knowing. `npm publish --ignore-scripts` skips it, and doing so means publishing something no one has proven installs.",
 	"scripts": {
 		"dev": "vite dev --port 5174",
 		"prebuild": "svelte-kit sync",
@@ -14,7 +15,8 @@
 		"check": "svelte-kit sync && svelte-check --tsconfig ./tsconfig.json",
 		"test:unit": "vitest",
 		"prepack": "node ../rapper_director/bin/vendor-children.mjs",
-		"postpack": "node ../rapper_director/bin/clean-children.mjs"
+		"postpack": "node ../rapper_director/bin/clean-children.mjs",
+		"prepublishOnly": "bash ../gitEr/packTest.sh"
 	},
 	"dependencies": {
 		"@mapbox/vector-tile": "^3.0.0",
