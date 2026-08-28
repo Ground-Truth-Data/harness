@@ -2,8 +2,9 @@
 /**
  * EPHEMERAL CARD — the dev-only tray that every tier shares.
  *
- * Everything that must NOT ship sits in here: the tier pill, the debug
- * toggle, a page's instrument panels. It exists in `vite dev` and nowhere
+ * Everything that must NOT ship sits in here: the tier pill (drawn by the
+ * card itself — every page switches tiers), plus whatever a page hands in,
+ * e.g. its debug toggle. It exists in `vite dev` and nowhere
  * else — `import.meta.env.DEV` is false on Vercel, on TestFlight and in a
  * `vite build`, so the card, and everything handed to it, is simply absent
  * there. No route, no flag, nothing to forget.
@@ -31,6 +32,9 @@
  */
 import { onMount } from "svelte";
 import type { Snippet } from "svelte";
+import { page } from "$app/state";
+import ParentPill from "../ParentPill/ParentPill.svelte";
+import { TIER_HOME, otherTierOrigin, otherTierPath } from "../sharedNav/tierRoutes";
 
 let {
 	/** Which window corner the tray hangs from. */
@@ -49,6 +53,39 @@ let {
 
 const dev = import.meta.env.DEV;
 let root = $state<HTMLElement>();
+
+/**
+ * THE TIER PILL LIVES HERE, NOT IN ANY PAGE. Every child page can be served
+ * by either tier, so "which tier is this, and where is the same page on the
+ * other one" is a fact about the SESSION, not about a map. The facts arrive
+ * as VITE_* defines from whichever vite.config is running (rapper's and
+ * ReTreever's both set them, dev server only); an npm install or a build has
+ * none, so T_TIER is "" and the pill is simply absent. The url math is
+ * tierRoutes.ts — the pill never guesses a host or a port.
+ */
+const ENV_T = import.meta.env as Record<string, string | undefined>;
+const T_TIER = ENV_T.VITE_RAPPER_TIER ?? "";
+const T_OTHER = ENV_T.VITE_OTHER_TIER ?? "";
+const T_SLOT = (ENV_T.VITE_TIER_SLOT ?? "right") as "left" | "right";
+const T_OTHER_ORIGIN = ENV_T.VITE_OTHER_ORIGIN;
+const T_OTHER_HOME = ENV_T.VITE_OTHER_HOME;
+let T_ROUTES: any[] = [];
+try {
+	T_ROUTES = JSON.parse(ENV_T.VITE_TIER_ROUTES ?? "[]");
+} catch {
+	T_ROUTES = [];
+}
+const tLeft = $derived(T_SLOT === "left" ? T_TIER : T_OTHER);
+const tRight = $derived(T_SLOT === "left" ? T_OTHER : T_TIER);
+const tOtherPath = $derived(otherTierPath(page.url.pathname, T_ROUTES, T_OTHER_HOME));
+const tOtherOrigin = $derived(
+	otherTierOrigin(tOtherPath, T_ROUTES.map((r: any) => ({ ...r, path: r.otherPath ?? r.path }))),
+);
+const tHref = $derived(
+	T_OTHER_ORIGIN
+		? (tOtherOrigin ?? T_OTHER_ORIGIN) + (tOtherPath ?? TIER_HOME) + page.url.search
+		: undefined,
+);
 let collapsed = $state(false);
 
 onMount(() => {
@@ -68,6 +105,9 @@ onMount(() => {
 			{#if title}<span class="title">{title}</span>{/if}
 		</header>
 		<div class="content" bind:this={host} hidden={collapsed}>
+			{#if T_TIER}
+				<div class="pill"><ParentPill leftLabel={tLeft} rightLabel={tRight} current={T_TIER} href={tHref} /></div>
+			{/if}
 			{@render children?.()}
 		</div>
 	</aside>
@@ -120,6 +160,7 @@ onMount(() => {
 	letter-spacing: 0.04em;
 }
 .title { color: #999; }
+.pill { flex: 0 0 auto; }
 .content {
 	display: flex;
 	flex-direction: column;
