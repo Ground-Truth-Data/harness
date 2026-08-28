@@ -72,8 +72,17 @@ export type ChildRecord = {
 	 * Everything that needs "where does this app begin" reads THIS: the child's
 	 * reroute hook for "/", the nav logo's link, and the url the dev server
 	 * prints. One statement, three consumers, no drift.
+	 *
+	 * Absent on a tier, for the same reason `paths` is empty there: a tier does
+	 * not begin anywhere of its own, it begins wherever the child it mounted
+	 * begins. Every consumer already assumed this — both tests in
+	 * childRegistry.test.ts iterate `CHILDREN.filter((c) => !c.tier)`, and
+	 * SharedNav reads `viewChild?.defaultPath ?? "/"` — but the type said
+	 * `string`, so the two tier rows below were a type error nothing reported.
+	 * `npm run check` in rapper could not see it: its tsconfig `include` was
+	 * overridden to `src/**\/*`, which contains no Svelte or retreeved files.
 	 */
-	defaultPath: string;
+	defaultPath?: string;
 	/** Paths the child serves that NO parent mirrors — its own standalone
 	 *  preview. Listed so a lookup still identifies the child, and excluded
 	 *  from the tier table so the pill never points at a parent 404. */
@@ -186,9 +195,11 @@ export const CHILDREN: ChildRecord[] = [
 		org: "Ground-Truth-Data",
 		name: "offline map",
 		logo: "GC_fly_logo_transparent.webp",
-		paths: ["/", "/offline", "/demo"],
+		paths: ["/", "/offline"],
 		defaultPath: "/offline",
-		soloPaths: ["/", "/demo"],
+		// No /demo. The engine is lib/OfflineMapPage.svelte and /offline is the
+		// one url that mounts it; the debug rails are a toggle on the map.
+		soloPaths: ["/"],
 		// NO nav views. Every control this map has lives ON the map, inside the
 		// phone — the debug toggle, the coordinate badge. A nav button for a
 		// page you are already on is a link to nowhere, and a nav "debug" was
