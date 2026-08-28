@@ -117,8 +117,10 @@ onMount(() => {
 .ephemeral {
 	position: fixed;
 	z-index: 9000;
-	width: min(28vw, 420px);
-	min-width: 320px;
+	/* Same rule as EphemeralDock: the page publishes the distance to the
+	   phone as --dock-width-left/right; the old cap is only the fallback. */
+	width: var(--dock-width, min(28vw, 420px));
+	min-width: min(320px, var(--dock-width, 320px));
 	max-height: calc(100vh - 24px);
 	display: flex;
 	flex-direction: column;
@@ -133,10 +135,10 @@ onMount(() => {
 }
 /* A host that owns a header sets --ephemeral-top on :root (rapper does, for
    its bar); with none the tray hugs the window edge. */
-.top-left { top: var(--ephemeral-top, 12px); left: 12px; }
-.top-right { top: var(--ephemeral-top, 12px); right: 12px; }
-.bottom-left { bottom: 12px; left: 12px; }
-.bottom-right { bottom: 12px; right: 12px; }
+.top-left { top: var(--ephemeral-top, 12px); left: 12px; --dock-width: var(--dock-width-left); }
+.top-right { top: var(--ephemeral-top, 12px); right: 12px; --dock-width: var(--dock-width-right); }
+.bottom-left { bottom: 12px; left: 12px; --dock-width: var(--dock-width-left); }
+.bottom-right { bottom: 12px; right: 12px; --dock-width: var(--dock-width-right); }
 .collapsed { max-height: none; }
 .bar {
 	display: flex;
