@@ -272,6 +272,12 @@ export function githubUrl(child: ChildRecord): string {
 }
 
 /**
+ * The one tier that IS an npm package. Named once so the rule below reads as a
+ * fact about a specific repo rather than a string comparison in a condition.
+ */
+const PACKAGE_TIER = "rapper";
+
+/**
  * THE SCAFFOLD COMMAND FOR ONE CHILD — built, never written down.
  *
  * WHY IT IS BUILT HERE. The command was typed by hand every time it was
@@ -292,10 +298,27 @@ export function githubUrl(child: ChildRecord): string {
  *    the scaffold falls back to the interactive picker, which is precisely the
  *    hang this flag exists to prevent.
  *
- * Returns null for a tier and for any row with no flag: a tier IS the thing
- * being scaffolded, so there is no command to mount it into itself.
+ * RAPPER ITSELF GETS THE BARE COMMAND, WITH NO FLAG AT ALL.
+ *
+ * This returned null for every tier, on the reasoning that a tier is what gets
+ * scaffolded rather than what gets mounted. True of ReTreever, and wrong about
+ * rapper: rapper IS the published package — `@retreever/create-rapper`, the
+ * thing `npm create @retreever/rapper` downloads — so the command to install it
+ * is not missing, it is simply the one without a child flag. Dropping the flag
+ * leaves the scaffold on its interactive picker, which is the correct behaviour
+ * when no child has been named.
+ *
+ * A tier is told apart from a child by `installFlag`, which rapper still does
+ * not have and must not get: a flag would claim rapper can be MOUNTED, and the
+ * `tier` flag exists to say it cannot.
+ *
+ * ReTreever still returns null. It publishes no package, so there is nothing to
+ * npm-create, and a row offering one would point at a package that not exist.
  */
 export function createCommand(child: ChildRecord, dir = "rapper"): string | null {
+	if (child.repo === PACKAGE_TIER) {
+		return `npm create @retreever/rapper@latest ${dir} --min-release-age=0`;
+	}
 	if (child.tier || !child.installFlag) return null;
 	return `npm create @retreever/rapper@latest ${dir} --min-release-age=0 -- --${child.installFlag}`;
 }
