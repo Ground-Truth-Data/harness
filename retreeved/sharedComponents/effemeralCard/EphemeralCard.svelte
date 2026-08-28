@@ -91,8 +91,10 @@ onMount(() => {
 	font: 12px/1.4 ui-monospace, SFMono-Regular, Menlo, monospace;
 	box-shadow: 0 6px 24px rgb(0 0 0 / 0.45);
 }
-.top-left { top: 12px; left: 12px; }
-.top-right { top: 12px; right: 12px; }
+/* A host that owns a header sets --ephemeral-top on :root (rapper does, for
+   its bar); with none the tray hugs the window edge. */
+.top-left { top: var(--ephemeral-top, 12px); left: 12px; }
+.top-right { top: var(--ephemeral-top, 12px); right: 12px; }
 .bottom-left { bottom: 12px; left: 12px; }
 .bottom-right { bottom: 12px; right: 12px; }
 .collapsed { max-height: none; }

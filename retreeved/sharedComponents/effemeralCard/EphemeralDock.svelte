@@ -17,8 +17,9 @@ import type { Snippet } from "svelte";
 
 let {
 	side = "left",
-	/** Distance from the top of the window — leave room for the tray. */
-	top = "12px",
+	/** Extra offset below the host header (--ephemeral-top) — e.g. the
+	 * tray's height, so a dock can sit under the tray on the same side. */
+	top = "0px",
 	host = $bindable<HTMLElement | undefined>(undefined),
 	children,
 }: {
@@ -37,7 +38,7 @@ onMount(() => {
 </script>
 
 {#if dev}
-	<aside bind:this={host} class="dock {side}" style="top:{top}" data-ephemeral-dock>
+	<aside bind:this={host} class="dock {side}" style="top:calc(var(--ephemeral-top, 12px) + {top})" data-ephemeral-dock>
 		{@render children?.()}
 	</aside>
 {/if}
