@@ -195,11 +195,9 @@ export const CHILDREN: ChildRecord[] = [
 		org: "Ground-Truth-Data",
 		name: "offline map",
 		logo: "GC_fly_logo_transparent.webp",
-		paths: ["/", "/offline"],
+		paths: ["/", "/offline", "/demo"],
 		defaultPath: "/offline",
-		// No /demo. The engine is lib/OfflineMapPage.svelte and /offline is the
-		// one url that mounts it; the debug rails are a toggle on the map.
-		soloPaths: ["/"],
+		soloPaths: ["/", "/demo"],
 		// NO nav views. Every control this map has lives ON the map, inside the
 		// phone — the debug toggle, the coordinate badge. A nav button for a
 		// page you are already on is a link to nowhere, and a nav "debug" was
