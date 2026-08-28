@@ -81,8 +81,9 @@ export function resolveLogos(
 /**
  * THE BAR'S DIMENSIONS — shared so the two bars are the same object.
  *
- * `--host-chrome` is read by a child that owns the viewport (a map stage is
- * position:fixed and ignores a header in normal flow), so it must match the
- * bar's real height or the child starts under it.
+ * The bar is `position: sticky` — in the flow — so a flex-column host sizes
+ * around it without knowing this number. `--host-chrome` remains for a child
+ * that reserves space by arithmetic (who_what's `calc(100dvh - …)`); it must
+ * match the bar's real height or that arithmetic is off by the difference.
  */
 export const MENU_HEIGHT_PX = 67; // 64px bar + the 3px gold rule under it
