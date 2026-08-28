@@ -73,6 +73,7 @@
 		"vite.config.ts",
 		"tsconfig.json",
 		"postcss.config.js",
+		".env.example",
 		"README.md",
 		"CONTRIBUTING.md",
 		"LICENSE"

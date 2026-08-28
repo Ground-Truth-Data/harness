@@ -77,6 +77,21 @@ rapper/
 > imagery are not in git. Run `getCache_OfflineMap/fetchAssets.sh`, or
 > ask Ground Truth Data for the bundle. See that folder's own `ASSETS.md`.
 
+### Environment
+
+Copy `.env.example` to `rapper/.env` and fill in whichever your component needs.
+Nothing here is required by rapper itself — each variable belongs to a component:
+
+| Variable | Needed by | Unset means |
+|---|---|---|
+| `VITE_TILES_HOST` | `getCache_OfflineMap` | no tiles are downloaded at all; the satellite layer still draws, so it reads as "roads are broken" |
+| `VITE_MAPBOX_TOKEN` | `getCache_OnlineMap`, `ReTreever_where` | no map is created; the page says which variable is missing |
+
+Neither has a default on purpose: a baked-in tile host bills someone else's
+Cloudflare account, and a baked-in Mapbox token bills someone else's Mapbox
+account. `.env.example` explains both, including how to run the offline tiles
+locally with no cloud account at all.
+
 ### Developing rapper itself
 
 ```bash

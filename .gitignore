@@ -99,10 +99,9 @@ coverage/
 .branches/
 .temp/
 
-# Package manager locks (keep these committed)
-pnpm-lock.yaml
-package-lock.json
-yarn.lock
+# Package manager locks: COMMITTED, never ignored. A gitignored lockfile
+# means clean installs (Vercel) float every ^-ranged dep to the newest
+# version and silently drift from what builds locally. Keep them tracked.
 
 # Data directory (Foundr-specific, harmless for others)
 data/

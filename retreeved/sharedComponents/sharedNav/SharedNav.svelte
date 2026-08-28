@@ -405,8 +405,17 @@ const viewName = $derived(viewChild?.name ?? name);
  * Resolved by pathname, like the name and the repo link beside it, so the bar
  * shows the views of whatever you are actually looking at. The prop is kept as
  * a fallback for a child cloned with no registry reachable.
+ *
+ * TYPED AS THE COMPONENT'S OWN `View`, not the registry's `NavView`. The two
+ * sides of the `??` are different shapes: the registry supplies `NavView`
+ * (href + label — a pure data contract), while the prop supplies `View`, which
+ * adds the UI-only `missing?` flag the dead-button branch below reads. Without
+ * this annotation the union narrowed to `NavView` and `v.missing` was a type
+ * error. `NavView` is assignable to `View` because `missing` is optional, so
+ * the registry path is unaffected — and `missing` stays out of the published
+ * registry type, where a rendering concern does not belong.
  */
-const viewButtons = $derived(viewChild?.views ?? views);
+const viewButtons: View[] = $derived(viewChild?.views ?? views);
 
 /**
  * IS THIS PAGE ONE THE MOUNTED CHILD ACTUALLY SERVES?
