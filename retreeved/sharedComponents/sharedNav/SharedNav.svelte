@@ -98,6 +98,7 @@ let {
 	views = [],
 	ghIcon,
 	pathname = "",
+	search = "",
 	tier,
 	otherTier,
 	tierSlot,
@@ -139,6 +140,21 @@ let {
 	 *  by a parent that may not be SvelteKit, and importing $app/state would
 	 *  make it refuse to build there. */
 	pathname?: string;
+	/**
+	 * THE QUERY STRING, CARRIED ACROSS THE TIER SWITCH.
+	 *
+	 * The pill's whole promise is "this page, other server". A url is
+	 * (origin, path, query) — resolving only the first two dropped the third,
+	 * so switching tiers while looking at ?at=53.9171,-122.7497 landed you on
+	 * the other tier's DEFAULT view of the map. Same failure class as the
+	 * origin bug above: half the url resolved, half discarded, and the result
+	 * looked like the switch had simply ignored you.
+	 *
+	 * Passed in for the same reason `pathname` is — this component may be
+	 * mounted by a parent that is not SvelteKit, so it cannot read $app/state.
+	 * Include the leading "?"; empty means no query, which is the common case.
+	 */
+	search?: string;
 } = $props();
 
 const dev = import.meta.env.DEV;
@@ -165,6 +181,44 @@ const rightTier = $derived(tierSlot === "left" ? otherTier : tier);
  * mapping is one-to-one in both directions and the lookup alone is right.
  */
 const otherPath = $derived(otherTierPath(pathname, routes, otherHome));
+
+/**
+ * A VIEW'S URL = its own path + its own params + the LIVE params.
+ *
+ * A view may carry a param of its own (`/offline?debug`), and the page it sits
+ * on may carry live state (`?at=…&z=…`). Naive concatenation produced
+ * `/offline?debug?at=…` — two `?`, and the browser reads everything after the
+ * first as one garbled key. Merge them as a real query: the view's own params
+ * are the view's IDENTITY and win; the live ones ride along.
+ *
+ * Why the view's win: the debug button must TURN DEBUG ON. If the live url
+ * already carried `debug=0`, the live copy would silently override the
+ * button's meaning. What the button says beats what the page happened to have.
+ */
+function viewUrl(href: string): string {
+	const [path, own = ""] = href.split("?");
+	const merged = new URLSearchParams(search);
+	for (const [k, v] of new URLSearchParams(own)) merged.set(k, v);
+	const q = merged.toString();
+	return q ? `${path}?${q}` : path;
+}
+
+/** Which view is CURRENT — path AND the view's own params must both match. */
+function isCurrentView(href: string): boolean {
+	const [path, own = ""] = href.split("?");
+	if (path !== pathname) return false;
+	const live = new URLSearchParams(search);
+	const ownParams = new URLSearchParams(own);
+	// A view with no params of its own is current only when NO other view's
+	// param is set — so "offline" is not lit while "?debug" is on.
+	if ([...ownParams].length === 0) {
+		return !viewButtons.some((o) => {
+			const [op, oq = ""] = o.href.split("?");
+			return op === path && oq && [...new URLSearchParams(oq)].every(([k]) => live.has(k));
+		});
+	}
+	return [...ownParams].every(([k]) => live.has(k));
+}
 
 /**
  * THE ORIGIN FOLLOWS THE DESTINATION, NOT THE PAGE YOU ARE ON.
@@ -441,7 +495,14 @@ const viewRepoUrl = $derived(
 						{v.label}
 					</span>
 				{:else}
-					<a href={v.href} class="btn" class:on={pathname === v.href}>
+					<!-- THE VIEW BUTTONS CARRY THE COORDINATE TOO. Same promise as
+					     the tier pill: "this view, that place". Jumping
+					     offline -> debug is the single most common debugging move,
+					     and losing the camera on the way made the two views
+					     incomparable at exactly the moment you were comparing
+					     them. `search` is the live query string, so the button is
+					     always the url you are on with the view swapped. -->
+					<a href={viewUrl(v.href)} class="btn" class:on={isCurrentView(v.href)}>
 						{v.label}
 					</a>
 				{/if}
@@ -470,7 +531,7 @@ const viewRepoUrl = $derived(
 				current={tier}
 				{unavailable}
 				href={otherHost && !unavailable
-					? (otherOrigin ?? otherHost) + (otherPath ?? TIER_HOME)
+					? (otherOrigin ?? otherHost) + (otherPath ?? TIER_HOME) + search
 					: undefined}
 			/>
 			{/if}
