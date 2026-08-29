@@ -1,4 +1,5 @@
 <script lang="ts">
+import "./devCard.css";
 /**
  * EPHEMERAL CARD — the dev-only tray that every tier shares.
  *
@@ -30,29 +31,24 @@
  * Lives in retreeved/ because retreeved/ is the one folder both tiers read:
  * ReTreever owns it, syncRetreeved.sh carries it to rapper. Names no tier.
  */
-import { onMount } from "svelte";
 import type { Snippet } from "svelte";
 import { page } from "$app/state";
 import ParentPill from "../ParentPill/ParentPill.svelte";
 import { TIER_HOME, otherTierOrigin, otherTierPath } from "../sharedNav/tierRoutes";
 
 let {
-	/** Which window corner the tray hangs from. */
-	corner = "top-left",
 	/** Small label in the tray's header, e.g. the page name. */
 	title = "",
 	/** The content element, for components that portal their DOM in. */
 	host = $bindable<HTMLElement | undefined>(undefined),
 	children,
 }: {
-	corner?: "top-left" | "top-right" | "bottom-left" | "bottom-right";
 	title?: string;
 	host?: HTMLElement;
 	children?: Snippet;
 } = $props();
 
 const dev = import.meta.env.DEV;
-let root = $state<HTMLElement>();
 
 /**
  * THE TIER PILL LIVES HERE, NOT IN ANY PAGE. Every child page can be served
@@ -88,15 +84,10 @@ const tHref = $derived(
 );
 let collapsed = $state(false);
 
-onMount(() => {
-	if (!root) return;
-	document.body.appendChild(root);
-	return () => root?.remove();
-});
 </script>
 
 {#if dev}
-	<aside bind:this={root} class="ephemeral {corner}" class:collapsed data-ephemeral>
+	<section class="dev-card ephemeral" class:collapsed data-ephemeral>
 		<header class="bar">
 			<button type="button" class="fold" onclick={() => (collapsed = !collapsed)} aria-expanded={!collapsed}>
 				{collapsed ? "▸" : "▾"}
@@ -110,36 +101,15 @@ onMount(() => {
 			{/if}
 			{@render children?.()}
 		</div>
-	</aside>
+	</section>
 {/if}
 
 <style>
 .ephemeral {
-	position: fixed;
-	z-index: 9000;
-	/* Same rule as EphemeralDock: the page publishes the distance to the
-	   phone as --dock-width-left/right; the old cap is only the fallback. */
-	width: var(--dock-width, min(28vw, 420px));
-	min-width: min(320px, var(--dock-width, 320px));
-	max-height: calc(100vh - 24px);
 	display: flex;
 	flex-direction: column;
 	gap: 8px;
-	padding: 8px;
-	border-radius: 12px;
-	background: rgb(0 0 0 / 0.72);
-	backdrop-filter: blur(6px);
-	color: #d8d4c8;
-	font: 12px/1.4 ui-monospace, SFMono-Regular, Menlo, monospace;
-	box-shadow: 0 6px 24px rgb(0 0 0 / 0.45);
 }
-/* A host that owns a header sets --ephemeral-top on :root (rapper does, for
-   its bar); with none the tray hugs the window edge. */
-.top-left { top: var(--ephemeral-top, 12px); left: 12px; --dock-width: var(--dock-width-left); }
-.top-right { top: var(--ephemeral-top, 12px); right: 12px; --dock-width: var(--dock-width-right); }
-.bottom-left { bottom: 12px; left: 12px; --dock-width: var(--dock-width-left); }
-.bottom-right { bottom: 12px; right: 12px; --dock-width: var(--dock-width-right); }
-.collapsed { max-height: none; }
 .bar {
 	display: flex;
 	align-items: center;

@@ -1,4 +1,5 @@
 <script lang="ts">
+import "./devCard.css";
 /**
  * EPHEMERAL DOCK — a dev-only side column for page-specific instruments.
  *
@@ -38,23 +39,14 @@ onMount(() => {
 </script>
 
 {#if dev}
-	<aside bind:this={host} class="dock {side}" style="top:calc(var(--ephemeral-top, 12px) + {top})" data-ephemeral-dock>
+	<aside bind:this={host} class="dev-lane dev-lane--{side} dock" style="top:calc(var(--ephemeral-top, 12px) + {top})" data-ephemeral-dock>
 		{@render children?.()}
 	</aside>
 {/if}
 
 <style>
 .dock {
-	position: fixed;
-	bottom: 12px;
 	z-index: 8900;
-	/* WIDTH IS THE DISTANCE TO THE PHONE, not a number. A page that has a
-	   phone on stage measures it and publishes --dock-width-left/right
-	   (OfflineMapPage does); with none the old cap stands. Chris asked for
-	   this "400 times" — the fixed 28vw left a dead strip beside cramped
-	   panels every single time. */
-	width: var(--dock-width, min(28vw, 420px));
-	min-width: min(320px, var(--dock-width, 320px));
 	display: flex;
 	flex-direction: column;
 	gap: 10px;
@@ -63,8 +55,6 @@ onMount(() => {
 	font: 12px/1.4 ui-monospace, SFMono-Regular, Menlo, monospace;
 }
 .dock:empty { display: none; }
-.left { left: 12px; --dock-width: var(--dock-width-left); }
-.right { right: 12px; --dock-width: var(--dock-width-right); }
 /* Same rule as the tray: the dock owns placement, the item keeps its look. */
 .dock > :global(*) {
 	position: static;
