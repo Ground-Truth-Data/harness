@@ -435,9 +435,7 @@
 }
 
 
-/* ReTreever navbar is h-20 (5rem); override rapper's 4rem map height default */
 :root {
-  --map-height-offset: 5rem;
   color-scheme: dark;
 }
 

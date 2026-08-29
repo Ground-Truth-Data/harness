@@ -15,11 +15,12 @@ import "./devCard.css";
  */
 import { onMount } from "svelte";
 import type { Snippet } from "svelte";
+import { publishDockWidths } from "./dockWidths";
 
 let {
 	side = "left",
-	/** Extra offset below the host header (--ephemeral-top) — e.g. the
-	 * tray's height, so a dock can sit under the tray on the same side. */
+	/** Extra offset below the host nav — e.g. the tray's height, so a dock
+	 * can sit under the tray on the same side. */
 	top = "0px",
 	host = $bindable<HTMLElement | undefined>(undefined),
 	children,
@@ -34,12 +35,17 @@ const dev = import.meta.env.DEV;
 onMount(() => {
 	if (!host) return;
 	document.body.appendChild(host);
-	return () => host?.remove();
+	const frame = document.querySelector<HTMLElement>(".mobile-preview-frame");
+	const stop = frame ? publishDockWidths(frame) : undefined;
+	return () => {
+		stop?.();
+		host?.remove();
+	};
 });
 </script>
 
 {#if dev}
-	<aside bind:this={host} class="dev-lane dev-lane--{side} dock" style="top:calc(var(--ephemeral-top, 12px) + {top})" data-ephemeral-dock>
+	<aside bind:this={host} class="dev-lane dev-lane--{side} dock" style="top:calc(var(--host-chrome, 0px) + 12px + {top})" data-ephemeral-dock>
 		{@render children?.()}
 	</aside>
 {/if}
