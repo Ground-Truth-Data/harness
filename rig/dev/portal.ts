@@ -9,9 +9,9 @@
  * element into a child as a prop; the child's `use:portal={host}` carries its
  * node across, wiring, state and scoped styles intact.
  *
- * Lives in retreeved/ for the same reason the card does: it is the one folder
+ * Lives in rapper/rig for the same reason the card does: it is the one tree
  * both tiers read (ReTreever owns it, syncRetreeved.sh carries it to rapper),
- * and every child reaches it as `$parent/retreeved/…`. It used to be a private
+ * and every child reaches it as `$rig/…`. It used to be a private
  * function inside the offline map; the online map needed the same twelve
  * lines, and two copies of a seam is how seams drift.
  */

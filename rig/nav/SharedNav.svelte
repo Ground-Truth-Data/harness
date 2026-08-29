@@ -29,7 +29,7 @@ import type { TierRoute } from "./tierRoutes";
  * who_what's layout was the one loaded. The label named the INSTALL, not the
  * page. A lookup by pathname is the only thing that can be right for both.
  */
-import { childByRepo, childForPath, githubUrl } from "$parent/retreeved/childRegistry";
+import { childByRepo, childForPath, githubUrl } from "$rig/childRegistry";
 
 type View = { href: string; label: string; missing?: boolean };
 

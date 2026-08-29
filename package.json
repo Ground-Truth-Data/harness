@@ -67,7 +67,9 @@
 	"files": [
 		"scripts/",
 		"src/",
-		"retreeved/",
+		"rig/",
+		"gc/",
+		"rt/",
 		"_children/",
 		"_director/",
 		"svelte.config.js",

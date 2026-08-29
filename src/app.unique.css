@@ -1,3 +1,5 @@
+/* THIS TIER'S STYLESHEET ENTRY — the shared theme first, then the tokens rapper disagrees on. */
+@import '$gc/theme.css';
 /* KEEP THIS FILE SHORT — only tokens the parents deliberately disagree on belong here; anything both share belongs in app.css. */
 
 :root {

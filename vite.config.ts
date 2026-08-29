@@ -27,7 +27,7 @@ function mountedChildRoutes() {
 		const reg = readFileSync(
 			fileURLToPath(
 				new URL(
-					"./retreeved/childRegistry.ts",
+					"./rig/childRegistry.ts",
 					import.meta.url,
 				),
 			),

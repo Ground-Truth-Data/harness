@@ -60,7 +60,7 @@ const config = {
              * $parent — THE MOUNTING PARENT, WHICHEVER ONE IT IS.
              *
              * One alias, then a REAL PATH. A child writes
-             * `$parent/retreeved/app.css` and reads it as a path, not a
+             * `$parent/src/app.unique.css` and reads it as a path, not a
              * renamed thing. rapper and ReTreever each point $parent at
              * THEMSELVES, so the same import lands in a different repo
              * depending on which server is running. That IS the switch.
@@ -78,14 +78,24 @@ const config = {
              * fills it in. A child cloned alone defines none, so the import
              * fails LOUDLY at build rather than rendering untokenised.
              *
-             * retreeved/ is GENERATED from ReTreever by gitEr/syncRetreeved.sh
-             * on every run_dev_start. Do not edit it here; edit the source in
-             * ReTreever. app.css and app.unique.css are deliberately NOT
-             * copied — they are the half the tiers must disagree on (white
-             * there, violet here), which is how a page declares its tier.
              */
             $parent: ".",
             "$parent/*": "./*",
+
+            // THE SHARED TREE. rapper is its home; ReTreever points the same
+            // three aliases sideways at ../rapper/. Nothing is copied anywhere.
+            //   $rig — rapper's furniture: Layout, nav, dev chrome, childRegistry
+            //   $gc  — Get Cache: theme, tokens, PhoneRig, its art
+            //   $rt  — ReTreever brand assets
+            // src/app.unique.css is the one file the tiers disagree on (white
+            // there, violet here) — it stays per-tier and is how a page declares
+            // its tier.
+            $rig: "./rig",
+            "$rig/*": "./rig/*",
+            $gc: "./gc",
+            "$gc/*": "./gc/*",
+            $rt: "./rt",
+            "$rt/*": "./rt/*",
 
         },
         /**

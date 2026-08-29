@@ -18,7 +18,7 @@
  * Both define the same alias, `$parent`, in their svelte.config.js:
  *
  *     both parents:  $parent: "."   (then a real path)
- *     a child writes: $parent/retreeved/sharedComponents/ParentPill/ParentPill.svelte
+ *     a child writes: $rig/dev/ParentPill.svelte
  *
  * An alias, not a relative path, for the usual reason: a raw `../../tools/...`
  * climb out of a child is what noEscapePlugin throws on, and an alias is one

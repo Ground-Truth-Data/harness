@@ -157,7 +157,7 @@ SvelteKit straight at it — one child, one route tree, no forwarding pages that
 can drift out of sync with what they forward to.
 
 So the shell is a component the child's layout renders:
-`retreeved/sharedComponents/sharedNav/SharedNav.svelte`. It is the owning
+`rig/nav/SharedNav.svelte`, rendered by `rig/Layout.svelte`. It is the owning
 product's logo, the child's name, one link per view, and the pill that jumps to
 the other tier.
 
@@ -168,10 +168,11 @@ carry its owner's identity into a repo meant to be handed out.
 The whole bar sits inside `{#if import.meta.env.DEV}`, so a production build
 does not hide it — it never emits it.
 
-`retreeved/` is GENERATED from ReTreever by `gitEr/syncRetreeved.sh`. Do not
-edit it here; edit the source in ReTreever. `app.css` and `app.unique.css` are
-deliberately NOT copied — they are the half the tiers must disagree on, which is
-how a page declares its tier.
+`rig/`, `gc/` and `rt/` are the shared tree, and THIS repo is its home —
+ReTreever imports them from here through the same `$rig`/`$gc`/`$rt` aliases.
+Nothing is copied. `src/app.unique.css` is the one per-tier file: it imports
+`$gc/theme.css` and then the tokens the tiers disagree on, which is how a page
+declares its tier.
 
 ## Known rough edges
 

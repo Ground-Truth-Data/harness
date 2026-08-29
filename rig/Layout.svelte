@@ -1,19 +1,19 @@
 <script lang="ts">
 /**
- * THE TIER SHELL — the one layout every child renders when it runs alone.
- * Nav on top, the page below it, the phone inside the page. The height the
- * nav takes is declared HERE (--host-chrome) and read by the nav, the docks
- * and the tray, so "the page begins where the nav ends" is decided once.
+ * RAPPER'S LAYOUT. rapper has no routes/+layout.svelte of its own — SvelteKit
+ * builds only the mounted child's — so every child's +layout.svelte renders
+ * this: nav on top, the page below it. The height the nav takes is declared
+ * HERE (--host-chrome) and read by the nav, the docks and the tray, so "the
+ * page begins where the nav ends" is decided once.
  *
- * A child's routes/+layout.svelte is just `<TierShell child={…}>` + children;
- * it declares no geometry, no chrome and no nav props of its own.
+ * Product-neutral: it knows nothing about phones. A phone app wraps its own
+ * children in $gc/PhoneRig inside this.
  */
-import "../app.css";
+import "$parent/src/app.unique.css";
 import { page } from "$app/state";
-import SharedNav from "./sharedNav/SharedNav.svelte";
-import type { TierRoute } from "./sharedNav/tierRoutes";
-import PhoneRig from "./PhoneRig.svelte";
-import ghIconUrl from "../sharedAssets/github-logo.png";
+import SharedNav from "./nav/SharedNav.svelte";
+import type { TierRoute } from "./nav/tierRoutes";
+import ghIconUrl from "./assets/github-logo.png";
 import type { Snippet } from "svelte";
 
 type Child = { name: string; owner: string; repo: string; views?: { href: string; label: string }[] };
@@ -21,9 +21,8 @@ type Child = { name: string; owner: string; repo: string; views?: { href: string
 let {
 	child,
 	logo,
-	phone = true,
 	children,
-}: { child: Child; logo: string; phone?: boolean; children?: Snippet } = $props();
+}: { child: Child; logo: string; children?: Snippet } = $props();
 
 const dev = import.meta.env.DEV;
 
@@ -81,11 +80,7 @@ const TIER_ROUTES = readRoutes(ENV.VITE_TIER_ROUTES);
 {/if}
 
 <main>
-	{#if phone}
-		<PhoneRig>{@render children?.()}</PhoneRig>
-	{:else}
-		{@render children?.()}
-	{/if}
+	{@render children?.()}
 </main>
 
 <style>
@@ -104,7 +99,7 @@ const TIER_ROUTES = readRoutes(ENV.VITE_TIER_ROUTES);
 		position: relative;
 		overflow: hidden;
 	}
-	/* app.css fixes the backdrop to the viewport; under a nav it fills <main>. */
+	/* theme.css fixes the phone backdrop to the viewport; under a nav it fills <main>. */
 	main :global(.mobile-preview-backdrop) {
 		position: absolute;
 	}

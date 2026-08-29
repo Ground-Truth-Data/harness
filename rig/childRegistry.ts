@@ -15,9 +15,9 @@
  * So the fact moves to a table keyed by path, and every consumer looks it up
  * instead of writing a name down.
  *
- * WHY IT LIVES IN retreeved/ AND NOT rapper_director/
+ * WHY IT LIVES IN rig/ AND NOT rapper_director/
  * rapper_director/ is documentation and local scripts — it never ships and no
- * runtime can import from it. retreeved/ is already copied into rapper by
+ * runtime can import from it. rig/ is the tree both tiers read, so it is reached by
  * gitEr/syncRetreeved.sh and already holds every logo this table points at, so
  * the registry travels with both the code that reads it and the assets it
  * names. A lookup that cannot be imported is not a lookup.
@@ -80,7 +80,7 @@ export type ChildRecord = {
 	 * SharedNav reads `viewChild?.defaultPath ?? "/"` — but the type said
 	 * `string`, so the two tier rows below were a type error nothing reported.
 	 * `npm run check` in rapper could not see it: its tsconfig `include` was
-	 * overridden to `src/**\/*`, which contains no Svelte or retreeved files.
+	 * overridden to `src/**\/*`, which contains no Svelte or rig/ files.
 	 */
 	defaultPath?: string;
 	/** Paths the child serves that NO parent mirrors — its own standalone

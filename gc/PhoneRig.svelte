@@ -1,14 +1,14 @@
 <script lang="ts">
 /**
  * THE PHONE. Backdrop, hand and frame — the one place this markup exists.
- * Geometry and fit rules are the .mobile-preview-* block in retreeved/app.css;
+ * Geometry and fit rules are the .mobile-preview-* block in gc/theme.css;
  * every tier renders this component and gets the identical rig. Children land
  * inside .mobile-preview-frame, which clips and is the containing block for
  * position:fixed, so a page that fills its slot fills the phone.
  */
 import type { Snippet } from "svelte";
-import handPhoneUrl from "../sharedAssets/hand_phoneV3.webp";
-import backdropUrl from "../sharedAssets/getcache_DT_bg.webp";
+import handPhoneUrl from "./assets/hand_phoneV3.webp";
+import backdropUrl from "./assets/getcache_DT_bg.webp";
 
 let { children }: { children?: Snippet } = $props();
 </script>

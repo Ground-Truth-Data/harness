@@ -1,13 +1,8 @@
-/* ReTreever Color Theme - Gold Accent */
-/* Some of these tokens have to go in app.unique.css Because that way we can see which, whether it's coming from ReTreever or rapper.
-/* App CSS gets copied over to rapper periodically, but App.unique.css are meant to diverge on purpose.
+/* THE SHARED THEME — one copy, here in rapper/gc, imported by every tier's src/app.unique.css (which then overrides the few tokens the tiers disagree on). This file must not know which tier imported it: no @source for a tier's src, no import of app.unique.css. */
 /* ALL @imports MUST come first */
 @import 'tailwindcss';
-@import '../src/lib/mobile/styles/mobile.css';
-@import '../src/lib/core/base.css';
-/* DIVERGES ON PURPOSE — same filename in rapper, different contents.
-   Last of the token imports so its values win on source order. */
-@import '../src/app.unique.css';
+@import './mobile.css';
+@import './base.css';
 /* map.css IS NOT IMPORTED HERE ANY MORE — the child imports it itself.
    It used to be `@import '../../getCache_OnlineMap/lib/map.css'`: a raw climb
    from a parent sideways INTO a child. Children reach UP to a parent through
@@ -17,10 +12,9 @@
    It now lives at the top of getCache_OnlineMap/lib/mapPage.svelte, next to
    the mapbox-gl vendor import it belongs with. Do not re-add it here.
 
-   THIS FILE IS THE SOURCE. syncRetreeved.sh atomically replaces
-   rapper/retreeved/ from this directory, so editing the rapper copy alone is
-   undone by the next sync (MEASURED: it reverted three times on 26 Aug 2026
-   before the edit was made here). */
+   THIS FILE IS THE ONLY COPY. Both tiers import it from here through $gc;
+   there is no synced duplicate to drift (the old one reverted three edits on
+   26 Aug 2026 before it was deleted). */
 /* ── VENDOR MAP CSS — ALWAYS `layer(vendor)`, NEVER BARE ────────────────────
    BOTH stylesheets ship because BOTH renderers are live: Mapbox on the online
    map, MapLibre on the offline one (/mobile/offlinev4). Their class namespaces
@@ -48,7 +42,6 @@
 @variant dark (&:where(.dark, .dark *));
 
 /* Tell Tailwind where to find classes */
-@source '../src/**/*.{html,js,svelte,ts}';
 /* Tailwind scans these for class names. One line per flat child — a glob
    cannot cover them, because they are siblings of ReTreever rather than
    children of one folder, and '../../*' would drag in every unrelated

@@ -28,13 +28,13 @@ import "./devCard.css";
  *      to MOVE its own DOM here (the offline map's `debugHost` prop does
  *      this so its panels keep their state and their scoped styles).
  *
- * Lives in retreeved/ because retreeved/ is the one folder both tiers read:
+ * Lives in rapper/rig because that is the one tree both tiers read:
  * ReTreever owns it, syncRetreeved.sh carries it to rapper. Names no tier.
  */
 import type { Snippet } from "svelte";
 import { page } from "$app/state";
-import ParentPill from "../ParentPill/ParentPill.svelte";
-import { TIER_HOME, otherTierOrigin, otherTierPath } from "../sharedNav/tierRoutes";
+import ParentPill from "./ParentPill.svelte";
+import { TIER_HOME, otherTierOrigin, otherTierPath } from "../nav/tierRoutes";
 
 let {
 	/** Small label in the tray's header, e.g. the page name. */
