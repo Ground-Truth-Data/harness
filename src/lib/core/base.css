@@ -104,7 +104,6 @@
 }
 
 @theme {
-	/* Shared Universal Colors */
 	/* These work on both Light (rapper) and Dark (ReTreever) modes */
 
 	/* Border & Input: #525252 (Neutral Gray-600) - Visible on white, subtle on dark */
@@ -141,7 +140,6 @@
 	}
 }
 
-/* Keyframes for animations */
 @keyframes accordion-down {
 	from {
 		height: 0;
@@ -200,9 +198,7 @@ table a:hover, [role="table"] a:hover, .table-container a:hover, .contact-sectio
 	}
 }
 
-/* Shared Button Convention - Enforce Grey/Dark Grey for Default Buttons */
-/* This overrides the default 'primary' color buttons to ensure consistency and readability */
-/* Specifically addresses the 'Gold on White' issue in ReTreever */
+/* Shared Button Convention — enforce grey/dark grey for default buttons, overriding the default primary color */
 [data-slot='button'].bg-primary {
 	background-color: #262626 !important; /* Neutral Dark Grey */
 	color: #fafafa !important; /* White Text */
@@ -231,23 +227,18 @@ table a:hover, [role="table"] a:hover, .table-container a:hover, .contact-sectio
 	background-color: rgb(from var(--color-destructive) r g b / 0.4) !important;
 }
 
-/* Shared Secondary Button Override - Address 'Solid Gold' Readability */
-/* Makes secondary buttons 50% opacity by default with black text */
+/* Secondary buttons — 50% opacity by default with black text */
 [data-slot='button'].bg-secondary {
 	background-color: color-mix(in srgb, var(--color-secondary), transparent 30%) !important;
 	color: #000000 !important;
 	border: 1px solid transparent !important;
 }
 
-/* Test: Make dropdown hover translucent */
+/* Make dropdown hover translucent */
 [data-highlighted]:not([data-highlighted='false']) {
 	background-color: color-mix(in srgb, var(--color-accent), transparent 40%) !important;
 }
 
-/* =============================================================================
-   MAP NAVIGATION BUTTONS - Shared Gold Theme
-   Applies to both icon images and SVG buttons
-============================================================================= */
 .map-nav-button,
 img[alt*="What"],
 img[alt*="Who"] {
@@ -349,11 +340,6 @@ img[alt*="Shovel"] {
 	background: none !important;
 	border: none !important;
 }
-
-/* =============================================================================
-   STAGE WHO WHAT SELECT COMPONENT
-   See: NAMING_CONVENTIONS.md > CSS Class Naming Conventions
-   ============================================================================= */
 
 /* Container - applies unified glow animation to children */
 /* Simple breathe: brighter for 2s, dimmer for 2s */
@@ -481,11 +467,6 @@ img[alt*="Shovel"] {
 .stage-who-what-select-item--loading:hover {
 	background: transparent;
 }
-
-/* =============================================================================
-   STAGE FILTER PILLS COMPONENT
-   See: NAMING_CONVENTIONS.md > CSS Class Naming Conventions
-   ============================================================================= */
 
 .stage-filter-pills-container {
 	display: flex;
