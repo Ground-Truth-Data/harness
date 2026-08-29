@@ -40,6 +40,8 @@ export type ChildRecord = {
 	org: string;
 	/** Short human name for the bar. */
 	name: string;
+	/** The product this child belongs to — the bar's title beside the logo. */
+	owner: string;
 	/** Logo filename inside sharedAssets/ — a NAME, not a path, so the importer
 	 *  resolves it against whichever parent is mounting. */
 	logo: string;
@@ -160,6 +162,7 @@ export const CHILDREN: ChildRecord[] = [
 		repo: "rapper",
 		org: "Ground-Truth-Data",
 		name: "rapper",
+		owner: "rapper",
 		logo: "rapper.webp",
 		paths: [],
 		tier: true,
@@ -168,6 +171,7 @@ export const CHILDREN: ChildRecord[] = [
 		repo: "ReTreever",
 		org: "Ground-Truth-Data",
 		name: "ReTreever",
+		owner: "ReTreever",
 		logo: "ReTreever_logo_sm.webp",
 		paths: [],
 		tier: true,
@@ -177,6 +181,7 @@ export const CHILDREN: ChildRecord[] = [
 		installFlag: "who_what",
 		org: "Ground-Truth-Data",
 		name: "who_what",
+		owner: "ReTreever",
 		logo: "ReTreever_logo_sm.webp",
 		paths: ["/", "/who", "/what"],
 		defaultPath: "/who",
@@ -194,6 +199,7 @@ export const CHILDREN: ChildRecord[] = [
 		installFlag: "offline",
 		org: "Ground-Truth-Data",
 		name: "offline map",
+		owner: "Get Cache",
 		logo: "GC_fly_logo_transparent.webp",
 		paths: ["/", "/offline"],
 		defaultPath: "/offline",
@@ -211,6 +217,7 @@ export const CHILDREN: ChildRecord[] = [
 		installFlag: "online",
 		org: "Ground-Truth-Data",
 		name: "online map",
+		owner: "Get Cache",
 		logo: "GC_fly_logo_transparent.webp",
 		paths: ["/", "/map", "/map/debug", "/demo"],
 		defaultPath: "/map/debug",
@@ -225,22 +232,12 @@ export const CHILDREN: ChildRecord[] = [
 		installFlag: "where",
 		org: "Ground-Truth-Data",
 		name: "where",
+		owner: "ReTreever",
 		logo: "ReTreever_logo_sm.webp",
-		/**
-		 * SERVES "/" ONLY — it has no page spelled /where yet.
-		 *
-		 * This entry claimed ["/where"] on its first write and the test caught
-		 * it immediately: the folder holds a single routes/+page.svelte. Until
-		 * the child is given a real /where route (the same restructure the two
-		 * map children got), the honest claim is the one path it answers, and
-		 * the parent's /where correctly finds no child here.
-		 */
-		paths: ["/"],
-		defaultPath: "/",
+		paths: ["/", "/where"],
+		defaultPath: "/where",
 		soloPaths: ["/"],
-		// Serves only "/" so far — no second view to switch between, so no
-		// buttons. It gets them when it gets real paths.
-		views: [],
+		views: [{ href: "/where", label: "where" }],
 	},
 ];
 

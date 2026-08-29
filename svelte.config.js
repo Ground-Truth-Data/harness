@@ -99,87 +99,31 @@ const config = {
 
         },
         /**
-         * THE MOUNTED CHILD'S ROUTES ARE THE APP'S ROUTES.
+         * WHICH ROUTE TREE THIS RAPPER SERVES.
          *
-         * SvelteKit serves whatever is under `kit.files.routes`, and that used
-         * to be rapper's own `src/routes/` holding a shell layout plus a
-         * two-line mount page per view — pages whose whole job was to import
-         * the child's real page from `src/lib/<child>/routes/`.
+         * In the workspace: rapper's OWN tree, src/routes — every child at once,
+         * each page a re-export of the child's routes/ page. A scaffold from
+         * `npm create` serves ONE child: the installer (rapper_director/bin/
+         * create.mjs pointRapperAt) rewrites all three keys below to
+         * "../<child>/routes|params|hooks" and deletes src/routes, src/params
+         * and src/hooks.ts from the copy.
          *
-         * That indirection is deleted. The child already carries its own
-         * `routes/` so it can be lifted into its own repo whole; pointing
-         * SvelteKit straight at it removes the only reason rapper needed a
-         * `src/routes/` at all. One child, one route tree, no forwarding pages
-         * that can drift out of sync with what they forward to.
+         * ⛔ THREE KEYS, ONE TREE — THEY MOVE TOGETHER. `params` and
+         * `hooks.universal` default to rapper's own src/, so pointing `routes`
+         * elsewhere alone leaves a child's matchers unfound (loud: "No matcher
+         * found for parameter 'searchTab'") and its reroute hook never run
+         * (SILENT: "/" 404s, build green).
          *
-         * THIS LINE IS WHAT THE INSTALLER WRITES. A rapper install carries
-         * exactly one child, chosen at install time; this path names it. A
-         * second child means a second install, in a second folder.
-         *
+         * ⛔ `routes` MUST STAY THE FIRST KEY, WITH NO COMMENT BETWEEN
+         * `files: {` AND IT — the installer anchors on /files:\s*\{\s*routes:/.
          * If rapper builds and emits NO pages, this path is wrong — SvelteKit
          * does not error on a missing route tree, it silently serves nothing.
          */
-        /**
-         * ⛔ THREE KEYS, ONE CHILD — AND THEY MOVE TOGETHER.
-         *
-         * `routes` alone was here until 27 Aug 2026, on the stated belief that
-         * "that path is the whole mount". It is not, and the installer had
-         * already been fixed for it (rapper_director/bin/create.mjs,
-         * `pointRapperAt`) while this file — a different repo — was left behind.
-         * That split is the flat-sibling hazard in miniature: the rewriter and
-         * the thing it rewrites cannot be fixed in one commit.
-         *
-         * MEASURED: with `routes` pointed at a child and `params` left at the
-         * SvelteKit default, `svelte-kit sync` died with
-         *
-         *     No matcher found for parameter 'searchTab' in route /[tab=searchTab]
-         *
-         * while ReTreever_who_what/params/searchTab.ts sat there the whole time.
-         * SvelteKit was looking in rapper/src/params, which does not exist.
-         *
-         * ⛔ WHY `hooks.universal` IS THE DANGEROUS ONE. A wrong `params` is
-         * loud, and only by luck — a route happened to demand a matcher. A wrong
-         * `hooks.universal` is SILENT: the hook never runs, the app builds green,
-         * and it misbehaves at runtime. That is why all three are written even
-         * though not every child ships a `hooks.ts` or a `params/`. A child with
-         * neither is fine: SvelteKit treats an absent matcher directory and an
-         * absent hooks module as absent, not an error.
-         *
-         * ⛔ `routes` MUST STAY THE FIRST KEY, AND NO COMMENT MAY SIT BETWEEN
-         * `files: {` AND IT. The installer anchors on /files:\s*\{\s*routes:/
-         * (create.mjs:305, still true as of 28 Aug 2026) — MEASURED 27 Aug 2026,
-         * putting this very comment inside the block made that pattern stop
-         * matching, which would have died the install. The per-key notes below
-         * are safe only because each sits AFTER its own key, never before
-         * `routes`.
-         */
         files: {
-            routes: "../getCache_OfflineMap/routes",
-            /**
-             * THE CHILD'S PARAM MATCHERS, for the same reason as its routes.
-             *
-             * The child serves /who and /what from ONE dynamic route guarded
-             * by a `searchTab` matcher. SvelteKit resolves matchers only from
-             * `kit.files.params`, which defaults to rapper's own src/params —
-             * a folder that does not exist here. Without this line the route
-             * `[tab=searchTab]` references a matcher SvelteKit cannot find and
-             * the build fails outright.
-             *
-             * The installer writes this beside `routes`; a child that declares
-             * no matchers simply has an empty folder.
-             */
-            params: "../getCache_OfflineMap/params",
-            /**
-             * THE CHILD'S UNIVERSAL HOOKS, beside its routes and matchers.
-             *
-             * The child maps "/" onto its default view with `reroute`, so that
-             * a view it declares has exactly ONE url naming it. SvelteKit
-             * loads this from `kit.files.hooks.universal`, which defaults to
-             * rapper's own src/hooks — a file that does not exist here — so
-             * without this line the hook silently never runs and "/" 404s.
-             */
+            routes: "src/routes",
+            params: "src/params",
             hooks: {
-                universal: "../getCache_OfflineMap/hooks",
+                universal: "src/hooks",
             },
         },
     },

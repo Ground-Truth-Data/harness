@@ -6,85 +6,88 @@ import { noEscapeHatch } from "./src/lib/guards/noEscapePlugin";
 
 // No PWA plugin here on purpose — Get Cache is a Capacitor native app, no service worker/manifest needed; one left here before silently shipped an unused SW until it crossed workbox's precache limit and broke the build.
 
+const svelteConfig = () =>
+	readFileSync(fileURLToPath(new URL("./svelte.config.js", import.meta.url)), "utf8");
+const registry = () =>
+	readFileSync(fileURLToPath(new URL("./rig/childRegistry.ts", import.meta.url)), "utf8");
+
+// The ONE child a scaffold mounts (installer's line: routes: "../<Child>/routes"), or undefined when rapper serves its own src/routes — every child.
 function mountedChildRepo(): string | undefined {
 	try {
-		const cfg = readFileSync(
-			fileURLToPath(new URL("./svelte.config.js", import.meta.url)),
-			"utf8",
-		);
-		// The installer's line: routes: "../<Child>/routes"
-		return cfg.match(/routes:\s*"\.\.\/([^/"]+)\/routes"/)?.[1];
+		return svelteConfig().match(/routes:\s*"\.\.\/([^/"]+)\/routes"/)?.[1];
 	} catch {
 		return undefined;
 	}
 }
 
+// Every child rapper serves: the scaffold's one, or every installable row in the registry.
+function mountedChildRepos(): string[] {
+	const one = mountedChildRepo();
+	if (one) return [one];
+	try {
+		return [...registry().matchAll(/repo:\s*"([^"]+)",\s*\n\s*installFlag:/g)].map((m) => m[1]);
+	} catch {
+		return [];
+	}
+}
+
 function mountedChildRoutes() {
 	try {
-		const repo = mountedChildRepo();
-		if (!repo) return [];
-
-		const reg = readFileSync(
-			fileURLToPath(
-				new URL(
-					"./rig/childRegistry.ts",
-					import.meta.url,
-				),
-			),
-			"utf8",
-		);
-		// The record for that repo, then the `paths` array inside it.
-		const recIdx = reg.indexOf(`repo: "${repo}"`);
-		if (recIdx === -1) return [];
-		// Bound every later match to THIS record — without it, a record with no soloPaths silently borrows the next record's.
-		const recEnd = reg.indexOf("\n\t},", recIdx);
-		const rec = reg.slice(recIdx, recEnd === -1 ? undefined : recEnd);
-		const pathsMatch = rec.match(/paths:\s*\[([^\]]*)\]/);
-		if (!pathsMatch) return [];
-		const paths = [...pathsMatch[1].matchAll(/"([^"]+)"/g)].map((x) => x[1]);
-
-		// Paths the child serves with no parent mirror (its standalone preview) — kept out so the pill never offers a route that 404s.
-		const soloMatch = rec.match(/soloPaths:\s*\[([^\]]*)\]/);
-		const solo = soloMatch
-			? [...soloMatch[1].matchAll(/"([^"]+)"/g)].map((x) => x[1])
-			: [];
-
+		const reg = registry();
 		// Mirrored views are spelled identically across tiers, so each row is the identity; a child-only path ("/") maps nowhere and is dropped, not pointed at a nonexistent route.
 		// Other tier is split across THREE hostnames, not one origin — VITE_OTHER_ORIGIN alone is wrong for routes like /offline that live on the getcache host instead.
 		const GETCACHE_ORIGIN = "http://getcache.localhost:5173";
 		const onGetCacheSite = (p: string) =>
 			p.startsWith("/offline") || p.startsWith("/map");
 
-		return paths
-			.filter((p) => p !== "/" && !solo.includes(p))
-			.map((p) => ({
-				path: p,
-				otherPath: p,
-				repo,
-				...(onGetCacheSite(p) ? { otherOrigin: GETCACHE_ORIGIN } : {}),
-			}));
+		return mountedChildRepos().flatMap((repo) => {
+			// The record for that repo, then the `paths` array inside it.
+			const recIdx = reg.indexOf(`repo: "${repo}"`);
+			if (recIdx === -1) return [];
+			// Bound every later match to THIS record — without it, a record with no soloPaths silently borrows the next record's.
+			const recEnd = reg.indexOf("\n\t},", recIdx);
+			const rec = reg.slice(recIdx, recEnd === -1 ? undefined : recEnd);
+			const pathsMatch = rec.match(/paths:\s*\[([^\]]*)\]/);
+			if (!pathsMatch) return [];
+			const paths = [...pathsMatch[1].matchAll(/"([^"]+)"/g)].map((x) => x[1]);
+
+			// Paths the child serves with no parent mirror (its standalone preview) — kept out so the pill never offers a route that 404s.
+			const soloMatch = rec.match(/soloPaths:\s*\[([^\]]*)\]/);
+			const solo = soloMatch
+				? [...soloMatch[1].matchAll(/"([^"]+)"/g)].map((x) => x[1])
+				: [];
+
+			return paths
+				.filter((p) => p !== "/" && !solo.includes(p))
+				.map((p) => ({
+					path: p,
+					otherPath: p,
+					repo,
+					...(onGetCacheSite(p) ? { otherOrigin: GETCACHE_ORIGIN } : {}),
+				}));
+		});
 	} catch {
 		// A dev-only convenience must never be the thing that stops a build.
 		return [];
 	}
 }
 
-// Falls back to the mounted child's first MIRRORED path — never solo, since a solo path only exists on this side and offering it to the other tier would 404; no mirrored paths at all falls back to "/".
+// Falls back to the first MIRRORED path — never solo, since a solo path only exists on this side and offering it to the other tier would 404; no mirrored paths at all falls back to "/".
 function otherHome(): string {
 	const rows = mountedChildRoutes();
 	return rows[0]?.otherPath ?? "/";
 }
 
-// Vite's printed URL isn't where the app starts — "/" reroutes to the child's landing view; read here from hooks.ts's DEFAULT constant rather than restated.
+// Vite's printed URL isn't where the app starts — "/" reroutes to the landing view; read from the mounted hooks file's own constant rather than restated.
 function childLandingPath(): string | undefined {
-	const repo = mountedChildRepo();
-	if (!repo) return undefined;
 	try {
+		const hooksPath = svelteConfig().match(/universal:\s*"([^"]+)"/)?.[1];
+		if (!hooksPath) return undefined;
 		const hooks = readFileSync(
-			fileURLToPath(new URL(`../${repo}/hooks.ts`, import.meta.url)),
+			fileURLToPath(new URL(`./${hooksPath}.ts`, import.meta.url)),
 			"utf8",
 		);
-		return hooks.match(/const DEFAULT = "([^"]+)"/)?.[1];
+		return hooks.match(/(?:const DEFAULT = |return )"([^"]+)"/)?.[1];
 	} catch {
 		return undefined;
 	}
@@ -140,7 +143,7 @@ const tierFacts = dev
 			JSON.stringify(mountedChildRoutes()),
 		),
 		// Slot is FIXED per tier (retreever left, rapper right), not by "me" — otherwise the halves swap sides between ports and the control moves under the cursor.
-		// Mounted child stated explicitly — childForPath(pathname) inference is wrong for a rapper (exactly one child); falls back to the path lookup only when this key is absent.
+		// A scaffold states its one child explicitly — childForPath(pathname) inference is wrong there; the workspace rapper serves every child and leaves this empty so the bar looks the live path up.
 		"import.meta.env.VITE_MOUNTED_CHILD": JSON.stringify(
 			mountedChildRepo() ?? "",
 		),

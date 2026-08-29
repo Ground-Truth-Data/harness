@@ -3,7 +3,7 @@
 ## The two tiers
 
 ```
-rapper       THIS REPO. A thin SvelteKit app that mounts ONE child.
+rapper       THIS REPO. A thin SvelteKit app that mounts the children.
   └── child  a flat  lib/ + routes/  folder, sitting BESIDE rapper.
 ```
 
@@ -30,9 +30,10 @@ my-tool/
 └── getCache_OfflineMap/    <- the child, SIBLING of rapper
 ```
 
-**One rapper, one child.** A second child means a second install, in a second
-folder. `svelte.config.js` `kit.files.routes` names the one that is mounted, so
-the config always answers "what is mounted here?" honestly.
+**One scaffold, one child.** An `npm create` install mounts one child: its
+`svelte.config.js` `kit.files` names that child's `routes/`, `params/` and
+`hooks.ts`, so the config always answers "what is mounted here?" honestly. (The
+workspace checkout is different — see "The shell" below.)
 
 The mounted child answers on its own routes, which are not always `/` — the
 offline map serves `/offline`, `/demo` and `/debug/map` and nothing at the root.
@@ -149,12 +150,13 @@ Children currently published:
 
 ## The shell
 
-rapper has no `src/routes/` of its own. It used to: a shell layout plus a
-two-line mount page per view, whose whole job was to import the child's real
-page. That indirection is deleted. The child already carries its own `routes/`
-so it can be lifted into its own repo whole, and `kit.files.routes` points
-SvelteKit straight at it — one child, one route tree, no forwarding pages that
-can drift out of sync with what they forward to.
+Each child carries its own `routes/` so it can be lifted into its own repo
+whole. A scaffold points `kit.files` straight at that tree — one child, one
+route tree. The workspace checkout instead serves every child at once from
+rapper's own `src/routes/`: the same `(rt)` and `(gc)` route groups ReTreever
+has, each page a one-line re-export of the child's `routes/` page, so the
+child's file stays the only copy. The installer deletes that tree from a
+scaffold.
 
 So the shell is a component the child's layout renders:
 `rig/nav/SharedNav.svelte`, rendered by `rig/Layout.svelte`. It is the owning
