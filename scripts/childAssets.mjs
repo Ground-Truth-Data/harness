@@ -1,51 +1,7 @@
 /**
- * childAssets.mjs — fill the /mobileAssets/ seam for WHICHEVER child is mounted.
- *
- * ⛔ WHY THIS EXISTS. The mounted child asks for /mobileAssets/... — pins, the
- * worldBase basemap tiles, the map glyphs — and rapper has no static/ of its
- * own, so every one of them 404s. The child cannot reach across into a parent
- * for them: it names no parent, and src/lib/guards/noEscapePlugin.ts throws on
- * the raw climb at build time. So the PARENT fills the seam, exactly as it does
- * for $parent/retreeved.
- *
- * ⛔ WHY IT IS A SCRIPT AND NOT A ONE-LINER. `predev` used to read:
- *
- *     bash ../getCache_OfflineMap/fetchAssets.sh static/mobileAssets
- *
- * which names a CHILD. A wrapper mounts exactly ONE child, chosen at install
- * time, so a hardcoded name is right for one install and wrong for every other.
- * MEASURED 28 Aug 2026 against the published 0.1.2, installed from the registry:
- *
- *     > rapper@0.1.2 predev
- *     > bash ../getCache_OfflineMap/fetchAssets.sh static/mobileAssets
- *     bash: ../getCache_OfflineMap/fetchAssets.sh: No such file or directory
- *     exit 127
- *
- * A non-zero pre-script aborts the script it precedes, so `npm run dev` — the
- * command the installer itself prints as the next step — never reached vite.
- * Only 1 of the 4 children ships a fetchAssets.sh at all, so the hardcoded name
- * was wrong for THREE QUARTERS of installs.
- *
- * ⛔ WHY NOTHING CAUGHT IT. gitEr/packTest.sh runs `npm install` and `npm run
- * build`. `predev` only fires on `npm run dev`, which no gate invokes. The check
- * was real; the path users actually take ran beside it.
- *
- * ⛔ HOW THE CHILD IS FOUND. From `kit.files.routes` in svelte.config.js — the
- * one line that already names the mount, rewritten per install by the installer
- * (rapper_director/bin/create.mjs, `pointRapperAt`). Read by IMPORTING the
- * config, the same way SvelteKit will, so this and reality cannot disagree about
- * which child they mean. Pattern borrowed from scripts/preflight.mjs on
- * backup/main-pre-dev-reset, which read the mount the same way.
- *
- * ⛔ A CHILD WITH NO fetchAssets.sh IS NORMAL, NOT AN ERROR. Three of the four
- * ship none, because they need no basemap assets. Skipping is the correct
- * outcome and must exit 0, or this reintroduces the very failure it removes.
- *
- * ⛔ WHAT IS DELIBERATELY *NOT* SOFTENED. If a child DOES ship fetchAssets.sh
- * and that script fails, its exit code is propagated unchanged. That script says
- * of itself "Fails loud — no silent fallbacks", and whether a missing asset
- * bundle should block `npm run dev` is the CHILD's policy, not this wrapper's to
- * quietly overrule. See the note printed below.
+ * ⛔ never hardcode a child's name here — rapper mounts exactly one, chosen at install time; resolve it from svelte.config.js's kit.files.routes instead.
+ * ⛔ a child shipping no fetchAssets.sh is normal, not an error — must exit 0 or this reintroduces the failure it fixes.
+ * ⛔ never swallow a child's fetchAssets.sh failure — propagate its exit code unchanged; that's the child's policy to set, not this wrapper's to overrule.
  */
 import { spawnSync } from "node:child_process";
 import { existsSync } from "node:fs";
@@ -59,9 +15,7 @@ let routes;
 try {
 	routes = (await import(`${ROOT}/svelte.config.js`)).default?.kit?.files?.routes;
 } catch (e) {
-	// Not fatal: a broken config is svelte-kit's error to report, in its own
-	// words, moments from now. Failing here would replace a precise message with
-	// a vaguer one from a script nobody was thinking about.
+	// not fatal — a broken config is svelte-kit's own error to report; don't preempt it with a vaguer message here.
 	console.warn(`${YEL}assets: could not read svelte.config.js (${e.message}) — skipping.${NC}`);
 	process.exit(0);
 }

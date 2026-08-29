@@ -3,58 +3,14 @@ import { existsSync, readdirSync, readFileSync, statSync } from "node:fs";
 import { join } from "node:path";
 import { fileURLToPath } from "node:url";
 
-/**
- * RAPPER MUST SERVE ITS OWN ASSETS. A COMMENT CANNOT ENFORCE THIS; THIS CAN.
- *
- * ⛔ THE BUG THIS EXISTS TO MAKE IMPOSSIBLE (27 Aug 2026).
- *
- * The mounted child asks the server it is running under for `/mobileAssets/...`
- * — the pin artwork, the worldBase basemap tiles, the map glyphs. rapper had no
- * `static/` directory at all, so every one of those requests 404'd here while
- * the identical URL returned 200 under ReTreever. MEASURED, same URL, same
- * bytes on disk:
- *
- *     /mobileAssets/pin_library_small/pin_default_sm.webp   5173: 200   5174: 404
- *     /mobileAssets/worldBase/base/tiles/6/18/23.pbf        5173: 200   5174: 404
- *     /mobileAssets/worldBase/glyphs/…/0-255.pbf            5173: 200   5174: 404
- *
- * What the user saw was a pin rendered as a broken-image square and a blank
- * basemap, with nothing in the console naming a cause. Hours went into the tile
- * store, the Workers and the download path before anyone looked at the server's
- * own 404 log — because a missing asset does not announce itself, it just draws
- * nothing.
- *
- * ⛔ WHY A TEST AND NOT A COMMENT, A README, OR A CAREFUL DEVELOPER.
- *
- * rapper mounts exactly ONE child at a time. A child's asset needs are invisible
- * to the parent mounting it: nothing in rapper's own source mentions
- * `pin_library_small`, so no amount of reading rapper tells you it must serve
- * it. That asymmetry is permanent and will recur with the NEXT child, which will
- * need a different set. The only durable answer is a check that runs without
- * being remembered.
- *
- * ⛔ AND WHY IT DOES NOT COPY ANYTHING. This test FAILS; it does not repair.
- * `npm run predev` calls the child's own `fetchAssets.sh`, which is the one
- * mechanism that puts the files here. A test that quietly fixed the tree would
- * make a broken checkout pass and hide exactly the condition it exists to
- * report — the same "a check that examines nothing must never report success"
- * rule the workspace already learned from hitch_test.sh.
- *
- * rapper NEVER reaches into ReTreever at runtime. ReTreever's static/ is the
- * SOURCE the copy is taken from; it is not a fallback the served app can fall
- * back to. There is no path from a rapper page to a ReTreever file.
- */
+// rapper must serve its own /mobileAssets — a missing file 404s here even though the identical URL 200s under ReTreever, and it draws nothing rather than announcing itself.
+// ⚠️ This test FAILS on missing assets; it does not copy them. Fix: npm run predev (runs the child's fetchAssets.sh).
+// ⚠️ rapper never reaches into ReTreever at runtime — assets must be rapper's own real files, never a fallback path into ReTreever's static/.
 
 const RAPPER_ROOT = fileURLToPath(new URL("../../..", import.meta.url));
 const ASSETS = join(RAPPER_ROOT, "static", "mobileAssets");
 
-/**
- * The four groups `getCache_OfflineMap/fetchAssets.sh` copies, and for each the
- * ONE file whose absence was actually observed breaking the app. Naming a real
- * file rather than just the folder is deliberate: `cp -R` interrupted halfway
- * leaves the directory present and mostly empty, which a folder-only check
- * happily passes.
- */
+// witness = one real file per group, not just the folder — cp -R interrupted halfway leaves an empty dir that a folder-only check would pass.
 const REQUIRED: ReadonlyArray<{ group: string; witness: string; why: string }> = [
 	{
 		group: "pin_library_small",
@@ -102,9 +58,7 @@ describe("rapper serves the assets its mounted child asks for", () => {
 				`Missing ${witness} — ${why}.\n` +
 					"Fix: npm run predev  (runs getCache_OfflineMap/fetchAssets.sh)",
 			).toBe(true);
-			// A 0-byte file passes existsSync and still 404s in spirit: the browser
-			// gets a reply it cannot decode. The repo already treats the checked-in
-			// planet.pmtiles placeholder as exactly this trap.
+			// ⚠️ A 0-byte file passes existsSync but is still broken — the browser can't decode an empty reply.
 			expect(statSync(path).size, `${witness} is 0 bytes — a placeholder, not the asset`).toBeGreaterThan(0);
 		});
 	}
@@ -121,10 +75,7 @@ describe("rapper serves the assets its mounted child asks for", () => {
 	});
 
 	it("does not reach into ReTreever at runtime", () => {
-		// The assets must be rapper's OWN files. A symlink pointing into a sibling
-		// checkout would make this suite pass on the machine that made it and fail
-		// for everyone else — and SvelteKit dies at build time on a dangling one,
-		// which fetchAssets.sh already warns about from experience.
+		// ⚠️ Assets must be rapper's own files, never symlinks — a symlink passes here but breaks for everyone else, and SvelteKit dies at build time on a dangling one.
 		for (const entry of readdirSync(ASSETS, { withFileTypes: true })) {
 			expect(
 				entry.isSymbolicLink(),
