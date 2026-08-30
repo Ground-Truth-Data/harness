@@ -219,13 +219,12 @@ export const CHILDREN: ChildRecord[] = [
 		name: "online map",
 		owner: "Get Cache",
 		logo: "GC_fly_logo_transparent.webp",
-		paths: ["/", "/map", "/map/debug", "/demo"],
-		defaultPath: "/map/debug",
+		paths: ["/", "/map", "/demo"],
+		defaultPath: "/map",
 		soloPaths: ["/", "/demo"],
-		views: [
-			{ href: "/map", label: "map" },
-			{ href: "/map/debug", label: "debug" },
-		],
+		// NO nav views, same rule as the offline map: this child's controls
+		// live on the map itself, and its dev read-out goes to the tray.
+		views: [],
 	},
 	{
 		repo: "ReTreever_where",
