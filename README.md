@@ -6,10 +6,12 @@
 
 # rapper
 
-**A SvelteKit *rapper*** that runs any one of ReTreever and Get Cache's
-component repos on its own:
+**A thin SvelteKit shell** that runs any one of ReTreever and Get Cache's
+component repos on its own. rapper itself carries almost nothing — the
+components live in their own repos, and the installer **clones the one you
+pick from GitHub**:
 
-- [getCache_offlineMap](https://github.com/Ground-Truth-Data/getCache_offlineMap)
+- [getCache_OfflineMap](https://github.com/Ground-Truth-Data/getCache_OfflineMap)
 - [getCache_OnlineMap](https://github.com/Ground-Truth-Data/getCache_OnlineMap)
 - [ReTreever_who_what](https://github.com/Ground-Truth-Data/ReTreever_who_what)
 - [ReTreever_where](https://github.com/Ground-Truth-Data/ReTreever_where)
@@ -17,35 +19,35 @@ component repos on its own:
 ## Get started
 
 ```bash
-npm create @retreever/rapper rapper
+npm create @retreever/rapper
 ```
 
-It asks which component you want, sets it up, and that is the whole install:
+It asks which component you want, clones it, installs the dependencies and
+starts the dev server — when it prints the big arrows, click the link:
 
 ```
   Which ReTreever component?
 
-    1  getCache_OfflineMap   Offline map engine
-    2  getCache_OnlineMap    Mapbox online map
-    3  ReTreever_where       Where page
-    4  ReTreever_who_what    Who / What directory pages
+  ❯ getCache_OfflineMap   Offline map engine
+    getCache_OnlineMap    Mapbox online map
+    ReTreever_where       Where page
+    ReTreever_who_what    Who / What directory pages
 
-  Enter a number (1-4):
+  ↑ ↓ to move, ⏎ to choose
 ```
 
-Then:
+That's the whole install — the component is running at
+<http://localhost:5174/> and Ctrl-C stops it. Afterwards, restart it any time
+with:
 
 ```bash
-cd rapper
-npm install
+cd <project-folder>
 npm run dev
 ```
 
-Enjoy the component at <http://localhost:5174/>.
-
-**Skipping the question.** Name the component on the command line and the
-picker never appears — useful in a script, a Dockerfile or CI, where there is
-nobody to answer it:
+**Or skip the question with a flag.** Name the component on the command line
+and the picker never appears; the project folder defaults to the component's
+name, so this is a complete command:
 
 ```bash
 npm create @retreever/rapper -- --getCache_OfflineMap
@@ -57,8 +59,7 @@ unambiguous fragment will do — `--offline`, `--OFFLINEMAP` and
 `--child <name>` work too. A fragment matching more than one component, or none,
 lists the real options and exits rather than guessing.
 
-The project folder is optional: leave it out and the folder takes the
-component's name. Name it and it wins, in any position relative to the flags:
+Name the folder yourself and it wins, in any position relative to the flags:
 
 ```bash
 npm create @retreever/rapper my-map -- --offline
@@ -67,21 +68,35 @@ npm create @retreever/rapper my-map -- --offline
 The `--` matters — it is npm's own separator, and a component flag placed
 before it is swallowed by npm and never reaches the installer.
 
+The install-and-run finish only happens in a real terminal. In a pipe, a
+Dockerfile or CI there is no one to hand a running server to, so the installer
+scaffolds, prints the one command left to run, and exits — same if you pass
+`--no-install`.
+
 **Why `npm create` and not `npm install`?** Because it asks you a question, and
 `npm install` is not allowed to — it runs unattended on build servers and in CI,
 where a prompt has nobody to answer it. `npm create` is the verb that may ask;
 it is the same one behind `npm create vite` and `npm create svelte`.
 
+## What you end up with
+
 **One rapper, one component.** A second component means a second install, in a
-second folder. What you get is a flat pair of folders, because that adjacency is
-what the `$parent/siblings` alias resolves against:
+second folder. What you get is a flat pair of folders, because that adjacency
+is what the `$parent/siblings` alias resolves against:
 
 ```
-rapper/
-├── package.json            <- deps installed HERE, at the root
-├── rapper/                 <- the parent
-└── getCache_OfflineMap/    <- the component, SIBLING of rapper
+getCache_OfflineMap/        <- the project root; deps installed HERE
+├── package.json
+├── rapper/                 <- the shell
+└── getCache_OfflineMap/    <- the component, a git CLONE, SIBLING of rapper
 ```
+
+**The component folder is a real git clone** of its GitHub repo — branch, push
+and open a PR from inside it. (If git or the network is missing at install
+time, a bundled snapshot is copied instead; you get working code but no
+history.) A component that imports from a sibling component brings that
+sibling along too, declared in its own `deps.json` — cloned beside it, never
+mounted.
 
 > The offline map's ~50 MB basemap is not in git; `npm run dev` downloads it
 > on first run (`getCache_OfflineMap/fetchAssets.sh`).
@@ -101,20 +116,11 @@ Cloudflare account, and a baked-in Mapbox token bills someone else's Mapbox
 account. `.env.example` explains both, including how to run the offline tiles
 locally with no cloud account at all.
 
-### Developing rapper itself
-
-```bash
-git clone https://github.com/Ground-Truth-Data/rapper.git
-```
-
-Clone the components beside it, not inside it — see CONTRIBUTING.md.
-
 ## How it works
 
-**One rapper, one component.** A component is source code, not an app — a flat
-`lib/` + `routes/` folder with no framework and no `node_modules`. It has
-nothing to `npm run dev` on its own; rapper is what makes it runnable. A second
-component means a second install, in a second folder.
+A component is source code, not an app — a flat `lib/` + `routes/` folder with
+no framework and no `node_modules`. It has nothing to `npm run dev` on its own;
+rapper is what makes it runnable.
 
 An installed rapper serves the component's own `routes/` directly:
 `kit.files` in `svelte.config.js` names that component's `routes/`, `params/`
@@ -128,12 +134,25 @@ and it only appears in dev. Branding is rapper's job, never the component's.
 Dependencies are declared and installed at the PROJECT ROOT, not inside
 `rapper/`. Node resolves bare imports by walking up, and the component is
 rapper's sibling — so the root is the one folder that is an ancestor of both.
-That is why `npm install` runs in `rapper/` and not in `rapper/rapper/`.
+That is why `npm install` runs at the root and not in `rapper/`.
+
+rapper is a dev harness, not a deployment target. The ReTreever production
+site ships through its own pipeline in the ReTreever workspace; nothing this
+installer produces is meant to deploy.
+
+### Developing rapper itself
+
+```bash
+git clone https://github.com/Ground-Truth-Data/rapper.git
+```
+
+Clone the components beside it, not inside it — see CONTRIBUTING.md.
 
 ## Contributing
 
-You work in rapper, but a child's code belongs to the child's repo. Send
-changes as a PR against rapper unless told otherwise.
+A component's code belongs to the component's repo — and the installer already
+left you in a clone of it, so branch, push and open the PR right there.
+Changes to the shell itself (rig, config, the installer) go to rapper.
 
 Components must stay **liftable** — self-contained, no reach into ReTreever's
 private side, and no import of a sibling that the component's own `deps.json`

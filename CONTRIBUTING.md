@@ -123,8 +123,9 @@ one change that quietly re-couples a child to code it will never ship with.
 
 ## Where changes go
 
-You work in rapper, but a child's code belongs to the child's repo. Send
-changes as a PR against rapper unless told otherwise.
+A child's code belongs to the child's repo — and the installer left you in a
+git clone of it, so branch, push and open the PR from inside that folder.
+Changes to the shell itself (rig, config, the installer) go to rapper.
 
 Children currently published:
 
