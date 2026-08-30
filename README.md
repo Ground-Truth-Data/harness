@@ -73,9 +73,8 @@ rapper/
 └── getCache_OfflineMap/    <- the component, SIBLING of rapper
 ```
 
-> **The offline map needs ~50 MB of assets first.** Tiles, glyphs and demo
-> imagery are not in git. Run `getCache_OfflineMap/fetchAssets.sh`, or
-> ask Ground Truth Data for the bundle. See that folder's own `ASSETS.md`.
+> The offline map's ~50 MB basemap is not in git; `npm run dev` downloads it
+> on first run (`getCache_OfflineMap/fetchAssets.sh`).
 
 ### Environment
 
@@ -84,7 +83,7 @@ Nothing here is required by rapper itself — each variable belongs to a compone
 
 | Variable | Needed by | Unset means |
 |---|---|---|
-| `VITE_TILES_HOST` | `getCache_OfflineMap` | no tiles are downloaded at all; the satellite layer still draws, so it reads as "roads are broken" |
+| `VITE_TILES_HOST` | `getCache_OfflineMap` | no tiles are downloaded; the satellite layer still draws, so it reads as "roads are broken" — the console says so on the first line |
 | `VITE_MAPBOX_TOKEN` | `getCache_OnlineMap`, `ReTreever_where` | no map is created; the page says which variable is missing |
 
 Neither has a default on purpose: a baked-in tile host bills someone else's
@@ -107,12 +106,14 @@ Clone the components beside it, not inside it — see CONTRIBUTING.md.
 nothing to `npm run dev` on its own; rapper is what makes it runnable. A second
 component means a second install, in a second folder.
 
-rapper has no `src/routes/` of its own. `kit.files.routes` in `svelte.config.js`
-points SvelteKit straight at the mounted component's own `routes/`, so there is
-one route tree and no forwarding pages to drift. The dev shell — logo, the
-component's name, one link per view — is a component of rapper's that the
-mounted routes render, and it only appears in dev. Branding is rapper's job,
-never the component's.
+An installed rapper serves the component's own `routes/` directly:
+`kit.files` in `svelte.config.js` names that component's `routes/`, `params/`
+and `hooks.ts`, so there is one route tree and no forwarding pages to drift.
+(The git checkout of rapper is different: its own `src/routes/` re-exports
+every component's pages at once, for developing them side by side; the
+installer deletes that tree.) The dev shell — logo, the component's name, one
+link per view — is `rig/Layout.svelte`, rendered by the component's layout,
+and it only appears in dev. Branding is rapper's job, never the component's.
 
 Dependencies are declared and installed at the PROJECT ROOT, not inside
 `rapper/`. Node resolves bare imports by walking up, and the component is
