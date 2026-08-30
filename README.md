@@ -48,7 +48,7 @@ picker never appears — useful in a script, a Dockerfile or CI, where there is
 nobody to answer it:
 
 ```bash
-npm create @retreever/rapper rapper -- --offline
+npm create @retreever/rapper -- --getCache_OfflineMap
 ```
 
 The name is matched loosely, so case and the underscore do not matter and any
@@ -56,6 +56,16 @@ unambiguous fragment will do — `--offline`, `--OFFLINEMAP` and
 `--getCache_OfflineMap` all select the same component. `--child=<name>` and
 `--child <name>` work too. A fragment matching more than one component, or none,
 lists the real options and exits rather than guessing.
+
+The project folder is optional: leave it out and the folder takes the
+component's name. Name it and it wins, in any position relative to the flags:
+
+```bash
+npm create @retreever/rapper my-map -- --offline
+```
+
+The `--` matters — it is npm's own separator, and a component flag placed
+before it is swallowed by npm and never reaches the installer.
 
 **Why `npm create` and not `npm install`?** Because it asks you a question, and
 `npm install` is not allowed to — it runs unattended on build servers and in CI,
