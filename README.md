@@ -17,7 +17,7 @@ component repos on its own:
 ## Get started
 
 ```bash
-npm create @retreever/rapper rapper
+npm create -y @retreever/rapper rapper
 ```
 
 It asks which component you want, sets it up, and that is the whole install:
@@ -48,7 +48,7 @@ picker never appears — useful in a script, a Dockerfile or CI, where there is
 nobody to answer it:
 
 ```bash
-npm create @retreever/rapper -- --getCache_OfflineMap
+npm create -y @retreever/rapper -- --getCache_OfflineMap
 ```
 
 The name is matched loosely, so case and the underscore do not matter and any
@@ -61,7 +61,7 @@ The project folder is optional: leave it out and the folder takes the
 component's name. Name it and it wins, in any position relative to the flags:
 
 ```bash
-npm create @retreever/rapper my-map -- --offline
+npm create -y @retreever/rapper my-map -- --offline
 ```
 
 The `--` matters — it is npm's own separator, and a component flag placed
