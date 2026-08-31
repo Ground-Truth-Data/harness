@@ -3,6 +3,7 @@
 @import "./rowShell.css";
 
 :root {
+	/* ── Surfaces ───────────────────────────────────────────── */
 	--rt-bg: #1a1a1a; /* page bg */
 	--rt-surface: #1f1f1f; /* card / row bg */
 	--rt-panel: #141414; /* modal / share-panel bg */
@@ -19,6 +20,7 @@
 	--rt-bg-dark: #2a2a2a; /* deep panels (bags, block widgets) */
 	--rt-bg-input-alt: #333333; /* cache input bg (darker than --rt-input) */
 
+	/* ── Borders ────────────────────────────────────────────── */
 	--rt-border: rgba(255, 215, 0, 0.18);
 	--rt-border-subtle: rgba(255, 215, 0, 0.10);
 	--rt-border-active: rgba(255, 215, 0, 0.55);
@@ -43,6 +45,7 @@
 	--rt-row-when: #8c9170; /* date at rest — glance target, not read target */
 	--rt-row-when-fresh: #86a65c; /* date for now / a time-of-day today ONLY */
 
+	/* ── Yellow / Gold ──────────────────────────────────────── */
 	--rt-yellow: #ffd700; /* primary accent */
 	/* Lighter warm yellow for small text on dark panels — Quality704 fault counts, yellow-bright meta labels. */
 	--rt-yellow-bright: #ffd42a;
@@ -58,6 +61,7 @@
 	--rt-gold-bevel: #8a6a0d; /* hard 0 2px 0 bevel beneath */
 	--rt-gold-ink: #1a1405; /* text + icon-badge color on gold */
 
+	/* ── Rust (section labels, "imported" pills) ───── */
 	--rt-rust: #c97a4a;
 	--rt-rust-soft: rgba(200, 127, 88, 0.14);
 	/* Same rust as everywhere — aliased not repeated so it can't drift. */
@@ -66,6 +70,7 @@
 	/* Sage = third accent: gold=commit, terracotta/rust=context, sage=nature. Same value as --rt-fg-muted/app.css --palette-sage — alias, don't repeat. */
 	--rt-sage: #838963;
 
+	/* ── Danger ─────────────────────────────────────────────── */
 	--rt-danger: #d4574a;
 	--rt-danger-soft: rgba(214, 90, 74, 0.16);
 
@@ -80,6 +85,7 @@
 	--rt-q704-fault-ink: #c41f12; /* on-white tone for PDF text/number */
 	--rt-q704-fault-soft: rgba(240, 70, 58, 0.16);
 
+	/* ── Spacing scale (4px base) ───────────────────────────── */
 	--rt-space-1: 4px;
 	--rt-space-2: 8px;
 	--rt-space-3: 10px;
@@ -89,15 +95,18 @@
 	--rt-space-7: 20px;
 	--rt-space-8: 24px;
 
+	/* ── Corner radii ───────────────────────────────────────── */
 	--rt-radius-sm: 8px; /* small buttons, share pill */
 	--rt-radius-md: 10px; /* tabs, action tiles */
 	--rt-radius-lg: 12px; /* row cards */
 	--rt-radius-xl: 14px; /* modals */
 	--rt-radius-pill: 999px; /* badges */
 
+	/* ── Borders widths ─────────────────────────────────────── */
 	--rt-border-w-structural: 1px; /* dividers */
 	--rt-border-w-interactive: 1.5px; /* row cards, tabs */
 
+	/* ── Shadows ────────────────────────────────────────────── */
 	--rt-shadow-gold:
 		0 2px 0 var(--rt-gold-bevel), 0 6px 14px rgba(232, 185, 35, 0.25),
 		inset 0 1px 0 rgba(255, 255, 255, 0.45);
@@ -122,6 +131,7 @@
 	/* Neutral button shadow (still used by .bagout-btn-adjacent components) */
 	--rt-shadow-btn: 0 3px 0 #363636, 0 5px 5px rgba(0, 0, 0, 0.4), inset 0 2px 0 rgba(255, 255, 255, 0.04);
 
+	/* ── Plaque / neutral button primitives ─────────────────── */
 	--rt-btn-radius: 0.75rem;
 	--rt-btn-neutral-bg: linear-gradient(180deg, #555 0%, #424242 100%);
 	--rt-btn-neutral-bg-hover: linear-gradient(180deg, #5a5a5a 0%, #4a4a4a 100%);
@@ -139,6 +149,7 @@
 	--rt-btn-commit-border: 2px solid #000;
 	--rt-btn-commit-text: var(--rt-bg);
 
+	/* ── Type ───────────────────────────────────────────────── */
 	--rt-font-display: "Retreever", sans-serif;
 	--rt-font-body:
 		system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
@@ -160,6 +171,7 @@
 	--rt-ls-pill: 0.16em; /* ACTIVE / IMPORTED pills */
 	--rt-ls-display: 0.04em; /* page titles in Retreever */
 
+	/* ── Motion ─────────────────────────────────────────────── */
 	--rt-ease-out: cubic-bezier(0.2, 0.8, 0.2, 1);
 	--rt-dur-fast: 80ms; /* button press */
 	--rt-dur-base: 220ms; /* fade scrim */
@@ -298,6 +310,10 @@ hr {
 	color: #edefe2;
 	transform: scale(0.92);
 }
+
+/* ============================================================
+   Mobile Animations
+   ============================================================ */
 
 /* Red buzz — validation error pulse */
 @keyframes mob-buzz-red {
@@ -721,7 +737,8 @@ body.map-only .bottom-nav {
 	pointer-events: none;
 }
 
-/* Everything inside the map viewport just fades — already absolutely positioned, so layout is unaffected. */
+/* Everything inside the map viewport just fades. They're already
+   absolutely positioned so layout is unaffected. */
 body.map-only .mobile-map-fill .shovel-drawer,
 body.map-only .mobile-map-fill .mob-drawer,
 body.map-only .mobile-map-fill .mob-drawer-scrim,
@@ -739,6 +756,7 @@ body.map-only .mobile-map-fill .maplibregl-ctrl-bottom-left {
 	pointer-events: none;
 }
 
+/* ── Mapbox control chrome (zoom buttons etc.) ── */
 .mobile-map-fill .mapboxgl-ctrl,
 .mobile-map-fill .maplibregl-ctrl { margin: 0 !important; }
 
@@ -1301,3 +1319,4 @@ body.map-only .mobile-map-fill .maplibregl-ctrl-bottom-left {
     box-shadow: var(--rt-nav-line);
     pointer-events: none;
 }
+
