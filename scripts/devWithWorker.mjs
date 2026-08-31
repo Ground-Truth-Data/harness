@@ -38,8 +38,12 @@ const portBusy = (port) =>
 	});
 
 const children = [];
+// ⚠️ detached + group-kill, not p.kill() — `npm run` is an intermediary, and killing
+// it alone ORPHANS the real vite/wrangler underneath (measured: servers kept
+// answering after the wrapper exited 0). detached gives each child its own
+// process group, so kill(-pid) takes the grandchildren with it.
 const start = (cmd, args, opts, name) => {
-	const p = spawn(cmd, args, { stdio: "inherit", ...opts });
+	const p = spawn(cmd, args, { stdio: "inherit", detached: true, ...opts });
 	p.on("exit", (code) => {
 		// vite dying ends the run; the worker dying just logs — the app still works against cloud tiers.
 		if (name === "vite") shutdown(code ?? 0);
@@ -49,7 +53,13 @@ const start = (cmd, args, opts, name) => {
 	return p;
 };
 const shutdown = (code) => {
-	for (const p of children) p.kill("SIGTERM");
+	for (const p of children) {
+		try {
+			process.kill(-p.pid, "SIGTERM");
+		} catch {
+			/* already gone */
+		}
+	}
 	process.exit(code);
 };
 process.on("SIGINT", () => shutdown(0));
