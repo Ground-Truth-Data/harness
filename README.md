@@ -1,5 +1,9 @@
 <img width="120" align="right" alt="rapper" src="https://github.com/user-attachments/assets/53029e8e-815f-4fb2-8a35-b97e71beb84e" />
 
+<br/>
+<span/>
+
+
 # rapper
 
 **A SvelteKit *rapper*** that runs any one of ReTreever and Get Cache's
@@ -13,7 +17,7 @@ component repos on its own:
 ## Get started
 
 ```bash
-npm create @retreever/rapper my-tool
+npm create @retreever/rapper rapper
 ```
 
 It asks which component you want, sets it up, and that is the whole install:
@@ -32,12 +36,36 @@ It asks which component you want, sets it up, and that is the whole install:
 Then:
 
 ```bash
-cd my-tool
+cd rapper
 npm install
 npm run dev
 ```
 
 Enjoy the component at <http://localhost:5174/>.
+
+**Skipping the question.** Name the component on the command line and the
+picker never appears — useful in a script, a Dockerfile or CI, where there is
+nobody to answer it:
+
+```bash
+npm create @retreever/rapper -- --getCache_OfflineMap
+```
+
+The name is matched loosely, so case and the underscore do not matter and any
+unambiguous fragment will do — `--offline`, `--OFFLINEMAP` and
+`--getCache_OfflineMap` all select the same component. `--child=<name>` and
+`--child <name>` work too. A fragment matching more than one component, or none,
+lists the real options and exits rather than guessing.
+
+The project folder is optional: leave it out and the folder takes the
+component's name. Name it and it wins, in any position relative to the flags:
+
+```bash
+npm create @retreever/rapper my-map -- --offline
+```
+
+The `--` matters — it is npm's own separator, and a component flag placed
+before it is swallowed by npm and never reaches the installer.
 
 **Why `npm create` and not `npm install`?** Because it asks you a question, and
 `npm install` is not allowed to — it runs unattended on build servers and in CI,
@@ -49,15 +77,29 @@ second folder. What you get is a flat pair of folders, because that adjacency is
 what the `$parent/siblings` alias resolves against:
 
 ```
-my-tool/
+rapper/
 ├── package.json            <- deps installed HERE, at the root
 ├── rapper/                 <- the parent
 └── getCache_OfflineMap/    <- the component, SIBLING of rapper
 ```
 
-> **The offline map needs ~50 MB of assets first.** Tiles, glyphs and demo
-> imagery are not in git. Run `getCache_OfflineMap/fetchAssets.sh`, or
-> ask Ground Truth Data for the bundle. See that folder's own `ASSETS.md`.
+> The offline map's ~50 MB basemap is not in git; `npm run dev` downloads it
+> on first run (`getCache_OfflineMap/fetchAssets.sh`).
+
+### Environment
+
+Copy `.env.example` to `rapper/.env` and fill in whichever your component needs.
+Nothing here is required by rapper itself — each variable belongs to a component:
+
+| Variable | Needed by | Unset means |
+|---|---|---|
+| `VITE_TILES_HOST` | `getCache_OfflineMap` | no tiles are downloaded; the satellite layer still draws, so it reads as "roads are broken" — the console says so on the first line |
+| `VITE_MAPBOX_TOKEN` | `getCache_OnlineMap`, `ReTreever_where` | no map is created; the page says which variable is missing |
+
+Neither has a default on purpose: a baked-in tile host bills someone else's
+Cloudflare account, and a baked-in Mapbox token bills someone else's Mapbox
+account. `.env.example` explains both, including how to run the offline tiles
+locally with no cloud account at all.
 
 ### Developing rapper itself
 
@@ -74,17 +116,19 @@ Clone the components beside it, not inside it — see CONTRIBUTING.md.
 nothing to `npm run dev` on its own; rapper is what makes it runnable. A second
 component means a second install, in a second folder.
 
-rapper has no `src/routes/` of its own. `kit.files.routes` in `svelte.config.js`
-points SvelteKit straight at the mounted component's own `routes/`, so there is
-one route tree and no forwarding pages to drift. The dev shell — logo, the
-component's name, one link per view — is a component of rapper's that the
-mounted routes render, and it only appears in dev. Branding is rapper's job,
-never the component's.
+An installed rapper serves the component's own `routes/` directly:
+`kit.files` in `svelte.config.js` names that component's `routes/`, `params/`
+and `hooks.ts`, so there is one route tree and no forwarding pages to drift.
+(The git checkout of rapper is different: its own `src/routes/` re-exports
+every component's pages at once, for developing them side by side; the
+installer deletes that tree.) The dev shell — logo, the component's name, one
+link per view — is `rig/Layout.svelte`, rendered by the component's layout,
+and it only appears in dev. Branding is rapper's job, never the component's.
 
 Dependencies are declared and installed at the PROJECT ROOT, not inside
 `rapper/`. Node resolves bare imports by walking up, and the component is
 rapper's sibling — so the root is the one folder that is an ancestor of both.
-That is why `npm install` runs in `my-tool/` and not in `my-tool/rapper/`.
+That is why `npm install` runs in `rapper/` and not in `rapper/rapper/`.
 
 ## Contributing
 

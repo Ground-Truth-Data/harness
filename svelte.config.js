@@ -20,7 +20,7 @@ const config = {
                   runtime: "nodejs24.x",
               }),
         /**
-         * THE LINCHPIN — the harness defines NO alias that leaves it.
+         * THE LINCHPIN — rapper defines NO alias that leaves it.
          *
          * A child is a trailer. Hitched to ReTreever it gets app.css, the
          * utils, the whole parent app. Unhitched it must still STAND — plainer,
@@ -28,15 +28,15 @@ const config = {
          *
          * It used to collapse silently the other way. `$lib` was defined here
          * pointing at ./src/lib — the SAME directory as `$parent`. So a child
-         * importing `$lib/anything` resolved into the harness's own lib and
+         * importing `$lib/anything` resolved into rapper's own lib and
          * "worked", on this machine, where ReTreever happens to sit next door.
          * On a contractor's laptop it dies. `$generated` was worse: it pointed
-         * at "../src/lib/generated", reaching up out of the harness and into
+         * at "../src/lib/generated", reaching up out of rapper and into
          * ReTreever itself.
          *
          * So the wall is an ABSENCE, not a check. With no `$lib` defined, a
          * child that reaches for ReTreever fails to BUILD — here, on your
-         * machine, in the harness — which is the same failure a contractor
+         * machine, in rapper — which is the same failure a contractor
          * would hit, found by you first. childBoundary.test.ts states this rule
          * in test form; this is what makes it TRUE rather than merely asserted.
          *
@@ -60,7 +60,7 @@ const config = {
              * $parent — THE MOUNTING PARENT, WHICHEVER ONE IT IS.
              *
              * One alias, then a REAL PATH. A child writes
-             * `$parent/retreeved/app.css` and reads it as a path, not a
+             * `$parent/src/app.unique.css` and reads it as a path, not a
              * renamed thing. rapper and ReTreever each point $parent at
              * THEMSELVES, so the same import lands in a different repo
              * depending on which server is running. That IS the switch.
@@ -78,101 +78,55 @@ const config = {
              * fills it in. A child cloned alone defines none, so the import
              * fails LOUDLY at build rather than rendering untokenised.
              *
-             * retreeved/ is GENERATED from ReTreever by gitEr/syncRetreeved.sh
-             * on every run_dev_start. Do not edit it here; edit the source in
-             * ReTreever. app.css and app.unique.css are deliberately NOT
-             * copied — they are the half the tiers must disagree on (white
-             * there, violet here), which is how a page declares its tier.
              */
             $parent: ".",
             "$parent/*": "./*",
 
+            // THE SHARED TREE. rapper is its home; ReTreever points the same
+            // three aliases sideways at ../rapper/. Nothing is copied anywhere.
+            //   $rig — rapper's furniture: Layout, nav, dev chrome, childRegistry
+            //   $gc  — Get Cache: theme, tokens, PhoneRig, its art
+            //   $rt  — ReTreever brand assets
+            // src/app.unique.css is the one file the tiers disagree on (white
+            // there, violet here) — it stays per-tier and is how a page declares
+            // its tier.
+            $rig: "./rig",
+            "$rig/*": "./rig/*",
+            $gc: "./gc",
+            "$gc/*": "./gc/*",
+            $rt: "./rt",
+            "$rt/*": "./rt/*",
+
         },
         /**
-         * THE MOUNTED CHILD'S ROUTES ARE THE APP'S ROUTES.
+         * WHICH ROUTE TREE THIS RAPPER SERVES.
          *
-         * SvelteKit serves whatever is under `kit.files.routes`, and that used
-         * to be rapper's own `src/routes/` holding a shell layout plus a
-         * two-line mount page per view — pages whose whole job was to import
-         * the child's real page from `src/lib/<child>/routes/`.
+         * In the workspace: rapper's OWN tree, src/routes — every child at once,
+         * each page a re-export of the child's routes/ page. A scaffold from
+         * `npm create` serves ONE child: the installer (rapper_director/bin/
+         * create.mjs pointRapperAt) rewrites all three keys below to
+         * "../<child>/routes|params|hooks" and deletes src/routes, src/params
+         * and src/hooks.ts from the copy.
          *
-         * That indirection is deleted. The child already carries its own
-         * `routes/` so it can be lifted into its own repo whole; pointing
-         * SvelteKit straight at it removes the only reason rapper needed a
-         * `src/routes/` at all. One child, one route tree, no forwarding pages
-         * that can drift out of sync with what they forward to.
+         * ⛔ THREE KEYS, ONE TREE — THEY MOVE TOGETHER. `params` and
+         * `hooks.universal` default to rapper's own src/, so pointing `routes`
+         * elsewhere alone leaves a child's matchers unfound (loud: "No matcher
+         * found for parameter 'searchTab'") and its reroute hook never run
+         * (SILENT: "/" 404s, build green).
          *
-         * THIS LINE IS WHAT THE INSTALLER WRITES. A rapper install carries
-         * exactly one child, chosen at install time; this path names it. A
-         * second child means a second install, in a second folder.
-         *
+         * ⛔ `routes` MUST STAY THE FIRST KEY, WITH NO COMMENT BETWEEN
+         * `files: {` AND IT — the installer anchors on /files:\s*\{\s*routes:/.
          * If rapper builds and emits NO pages, this path is wrong — SvelteKit
          * does not error on a missing route tree, it silently serves nothing.
          */
-        /**
-         * ⛔ THREE KEYS, ONE CHILD — AND THEY MOVE TOGETHER.
-         *
-         * `routes` alone was here until 27 Aug 2026, on the stated belief that
-         * "that path is the whole mount". It is not, and the installer had
-         * already been fixed for it (rapper_director/bin/create.mjs,
-         * `pointRapperAt`) while this file — a different repo — was left behind.
-         * That split is the flat-sibling hazard in miniature: the rewriter and
-         * the thing it rewrites cannot be fixed in one commit.
-         *
-         * MEASURED: with `routes` pointed at ReTreever_who_what and `params`
-         * left at the SvelteKit default, `svelte-kit sync` died with
-         *
-         *     No matcher found for parameter 'searchTab' in route /[tab=searchTab]
-         *
-         * while ReTreever_who_what/params/searchTab.ts sat there the whole time.
-         * SvelteKit was looking in rapper/src/params, which does not exist.
-         *
-         * ⛔ WHY `hooks.universal` IS THE DANGEROUS ONE. A wrong `params` is
-         * loud, and only by luck — a route happened to demand a matcher. A wrong
-         * `hooks.universal` is SILENT: the hook never runs, the app builds green,
-         * and it misbehaves at runtime. That is why all three are written even
-         * though only ReTreever_who_what currently ships a `hooks.ts` or a
-         * `params/`. A child with neither is fine: SvelteKit treats an absent
-         * matcher directory and an absent hooks module as absent, not an error.
-         *
-         * ⛔ `routes` MUST STAY THE FIRST KEY, AND NO COMMENT MAY SIT BETWEEN
-         * `files: {` AND IT. The installer anchors on /files:\s*\{\s*routes:/ —
-         * MEASURED 27 Aug 2026, putting this very comment inside the block made
-         * that pattern stop matching, which would have died the install.
-         *
-         * If rapper builds and emits NO pages, `routes` is wrong — SvelteKit
-         * does not error on a missing route tree, it silently serves nothing.
-         */
         files: {
-            routes: "../ReTreever_who_what/routes",
-            params: "../ReTreever_who_what/params",
+            routes: "src/routes",
+            params: "src/params",
             hooks: {
-                universal: "../ReTreever_who_what/hooks",
+                universal: "src/hooks",
             },
         },
     },
 };
-
-/**
- * ONE MOUNT POINT, THREE THINGS MOUNTED.
- *
- * The installer rewrites exactly one string — `files.routes` above
- * (rapper_director/bin/create.mjs, the `routes:` regex) — so params and hooks
- * are DERIVED from it rather than repeating the child's name. Repeating it
- * means an install repoints the routes and leaves the matchers behind, which
- * is how /who 500'd with "No matcher found for parameter 'searchTab'"
- * (27 Aug 2026): the child shipped params/searchTab.ts, kit.files.params
- * still defaulted to rapper/src/params, and that directory does not exist.
- * The same absence left the child's hooks.ts unmounted, so its `reroute` —
- * the whole reason "/" resolves to /who — never ran either.
- *
- * A child carrying neither is fine, and most do not: SvelteKit guards the
- * params directory with existsSync (create_manifest_data/index.js:91) and
- * resolves the hooks entry only if a file is actually there. Only
- * ReTreever_who_what ships either today.
- */
-const child = config.kit.files.routes.replace(/\/routes$/, "");
-config.kit.files.params = `${child}/params`;
-config.kit.files.hooks = { universal: `${child}/hooks` };
 
 export default config;

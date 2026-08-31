@@ -3,16 +3,14 @@
 ## The two tiers
 
 ```
-rapper       THIS REPO. A thin SvelteKit app that mounts ONE child.
+rapper       THIS REPO. A thin SvelteKit app that mounts the children.
   └── child  a flat  lib/ + routes/  folder, sitting BESIDE rapper.
 ```
 
 ## Getting a child
 
-A child is its own repository. It is not inside this one — four copies used to
-live under `src/lib/` until 26 Aug 2026, by which point they were 62 files
-behind the real repos. What is left in `src/lib/` is rapper's own handful of
-files: `core/base.css`, `guards/noEscapePlugin.ts` and the mobile stylesheets.
+A child is its own repository. It is not inside this one — `src/lib/` holds
+only rapper's own `guards/noEscapePlugin.ts`.
 
 One command sets up a project around a child:
 
@@ -30,12 +28,14 @@ my-tool/
 └── getCache_OfflineMap/    <- the child, SIBLING of rapper
 ```
 
-**One rapper, one child.** A second child means a second install, in a second
-folder. `svelte.config.js` `kit.files.routes` names the one that is mounted, so
-the config always answers "what is mounted here?" honestly.
+**One scaffold, one child.** An `npm create` install mounts one child: its
+`svelte.config.js` `kit.files` names that child's `routes/`, `params/` and
+`hooks.ts`, so the config always answers "what is mounted here?" honestly. (The
+workspace checkout is different — see "The shell" below.)
 
 The mounted child answers on its own routes, which are not always `/` — the
-offline map serves `/offline`, `/demo` and `/debug/map` and nothing at the root.
+offline map serves `/offline` (its `hooks.ts` reroutes `/` there). The debug
+rails are a toggle on that page, not a second URL.
 
 ### Why the child is a SIBLING, and why the install is at the root
 
@@ -51,28 +51,12 @@ rapper, so walking up from `ReTreever_who_what/lib/cn.ts` reaches the project
 root and stops; it never descends into `rapper/node_modules`. Installing inside
 rapper therefore satisfies rapper's own imports and none of the child's.
 
-MEASURED: with the deps only in `rapper/package.json`, `clsx` installed fine and
-the build still died on "Rollup failed to resolve import clsx from
-ReTreever_who_what/lib/cn.ts".
-
 The root is the one directory that is an ancestor of BOTH — exactly the role
 `fetch/` plays in the development workspace. So rapper's dependencies and the
 child's are merged and declared there, and installed once, at the top. The
 child's pins win on conflict: they are the versions its code was tested against,
 and a child that silently borrowed its parent's version is a hole that only
 shows up once it is lifted out.
-
-## Running a child
-
-The mounted child answers on its own routes. For `getCache_OfflineMap`:
-
-| Route | What it is |
-|---|---|
-| `/debug/map` | the offline basemap engine **with** its debug rails |
-| `/offline`   | the same engine, same fixtures, rails hidden |
-
-Those two are one implementation, not two copies — the engine wiring is the
-part that drifts, so it exists once.
 
 ### The offline map needs ~50 MB of assets first
 
@@ -84,8 +68,9 @@ AGPL. Without them the map renders blank and the BUILD fails outright
 getCache_OfflineMap/fetchAssets.sh
 ```
 
-See that child's own `ASSETS.md`. With no local source for them, ask
-Ground Truth Data for the asset bundle.
+Runs on the first `npm run dev`; copies the basemap from a ReTreever checkout
+beside it if there is one, otherwise downloads it from the child's GitHub
+release.
 
 ## The rules that keep a child liftable
 
@@ -94,22 +79,20 @@ a new child is governed the day it is created, whoever owns it.
 
 1. **A child never names its parent.** Inside a child, imports are relative, or
    they go through an alias the parent fills in. rapper defines `$parent`,
-   `$parent/*`, `$parent/siblings` and `$parent/siblings/*` — and nothing else.
-   A raw `../../rapper/…` climb NAMES rapper, so the ReTreever side dies and the
-   switch with it; `noEscapePlugin` throws on it.
+   `$parent/siblings` and the shared tree `$rig` / `$gc` / `$rt` — and nothing
+   else. A raw `../../rapper/…` climb NAMES rapper, so the ReTreever side dies
+   and the switch with it; `noEscapePlugin` throws on it.
 2. **A child never imports another child** except where its own `deps.json`
    declares it. Two children that import each other freely are one child wearing
    two folders. The declared exception is read, never guessed: `ReTreever_where`
-   imports two modules from `getCache_OnlineMap`, so the installer copies that
+   declares two modules from `getCache_OnlineMap`, so the installer copies that
    companion in beside it — present to satisfy imports, not mounted.
 3. **A child never touches `$lib` / `$tinyStore` / `$mobRoutes`.** That is
    ReTreever's proprietary side.
-4. **A child is SELF-CONTAINED.** There is no shared middle folder any more.
-   `mapShared/` was dissolved on 24 Aug 2026 and every file in it moved DOWN
-   into the children that used it — duplicated where two children both needed
-   one. That duplication is correct, not a compromise: a published child must
-   install and run on its own, and a third package for an 80-line helper is not
-   worth the release ceremony.
+4. **A child is SELF-CONTAINED.** There is no shared middle folder. A helper two
+   children both need is duplicated in each: a published child must install and
+   run on its own, and a third package for an 80-line helper is not worth the
+   release ceremony.
 5. **No relative path climbs out of the child.**
 
 The guards live in ReTreever — it is the only tier that can see both sides, so
@@ -119,6 +102,9 @@ them:
 ```bash
 npx vitest run src/lib/core/harnessGuards/   # from the ReTreever repo
 ```
+
+Each child also carries its own `lib/noParentNames.test.ts`, which runs in a
+bare clone with `npm test`.
 
 If one goes red while you are moving code, it is telling you the child just
 stopped being liftable. Fix the shape, do not loosen the rule — and after
@@ -149,15 +135,16 @@ Children currently published:
 
 ## The shell
 
-rapper has no `src/routes/` of its own. It used to: a shell layout plus a
-two-line mount page per view, whose whole job was to import the child's real
-page. That indirection is deleted. The child already carries its own `routes/`
-so it can be lifted into its own repo whole, and `kit.files.routes` points
-SvelteKit straight at it — one child, one route tree, no forwarding pages that
-can drift out of sync with what they forward to.
+Each child carries its own `routes/` so it can be lifted into its own repo
+whole. A scaffold points `kit.files` straight at that tree — one child, one
+route tree. The workspace checkout instead serves every child at once from
+rapper's own `src/routes/`: the same `(rt)` and `(gc)` route groups ReTreever
+has, each page a one-line re-export of the child's `routes/` page, so the
+child's file stays the only copy. The installer deletes that tree from a
+scaffold.
 
 So the shell is a component the child's layout renders:
-`retreeved/sharedComponents/sharedNav/SharedNav.svelte`. It is the owning
+`rig/nav/SharedNav.svelte`, rendered by `rig/Layout.svelte`. It is the owning
 product's logo, the child's name, one link per view, and the pill that jumps to
 the other tier.
 
@@ -168,15 +155,8 @@ carry its owner's identity into a repo meant to be handed out.
 The whole bar sits inside `{#if import.meta.env.DEV}`, so a production build
 does not hide it — it never emits it.
 
-`retreeved/` is GENERATED from ReTreever by `gitEr/syncRetreeved.sh`. Do not
-edit it here; edit the source in ReTreever. `app.css` and `app.unique.css` are
-deliberately NOT copied — they are the half the tiers must disagree on, which is
-how a page declares its tier.
-
-## Known rough edges
-
-- ReTreever's dog logo is not in this repo. The only copy is gitignored and is
-  a 1.8 MB PNG; a small web-sized mark is needed before the first ReTreever
-  child lands.
-- The repo's history carries three ~95 MB geojson files that were later
-  deleted, so a clone is larger than the working tree suggests.
+`rig/`, `gc/` and `rt/` are the shared tree, and THIS repo is its home —
+ReTreever imports them from here through the same `$rig`/`$gc`/`$rt` aliases.
+Nothing is copied. `src/app.unique.css` is the one per-tier file: it imports
+`$gc/theme.css` and then the tokens the tiers disagree on, which is how a page
+declares its tier.
