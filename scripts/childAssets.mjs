@@ -39,7 +39,7 @@ const r = spawnSync("bash", [script, "static/mobileAssets"], { stdio: "inherit",
 if (r.status !== 0) {
 	console.error("");
 	console.error(`${YEL}assets: that child's fetchAssets.sh failed, so \`npm run dev\` stops here.${NC}`);
-	console.error(`${DIM}   The failure above is the CHILD's, reported in its own words — see its ASSETS.md.${NC}`);
+	console.error(`${DIM}   The failure above is the CHILD's, reported in its own words.${NC}`);
 	console.error(`${DIM}   To start the server anyway: npm run dev --ignore-scripts${NC}`);
 	console.error("");
 }
