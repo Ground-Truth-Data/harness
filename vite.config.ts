@@ -20,12 +20,20 @@ function mountedChildRepo(): string | undefined {
 	}
 }
 
-// Every child rapper serves: the scaffold's one, or every installable row in the registry.
+// Every child rapper serves: the scaffold's one, or every non-tier row in the registry.
+// (Tiers would be harmless anyway — their `paths` are empty, so they contribute no routes.)
 function mountedChildRepos(): string[] {
 	const one = mountedChildRepo();
 	if (one) return [one];
 	try {
-		return [...registry().matchAll(/repo:\s*"([^"]+)",\s*\n\s*installFlag:/g)].map((m) => m[1]);
+		const reg = registry();
+		return [...reg.matchAll(/repo:\s*"([^"]+)"/g)]
+			.filter((m) => {
+				// Bound the check to THIS record, same trick as mountedChildRoutes below.
+				const recEnd = reg.indexOf("\n\t},", m.index);
+				return !reg.slice(m.index, recEnd === -1 ? undefined : recEnd).includes("tier: true");
+			})
+			.map((m) => m[1]);
 	} catch {
 		return [];
 	}
@@ -169,7 +177,21 @@ return {
 		},
 	},
 	test: {
-		include: ["src/**/*.{test,spec}.{js,ts}"],
+		// The mounted children's suites ship in their clones (50+ files in getCache_OfflineMap
+		// alone) — without the sibling globs, a scaffolded developer has the whole child test
+		// suite sitting beside rapper and nothing that runs it. Scoped to lib/ + routes/ like
+		// ReTreever's runner: a bare ../<child>/** glob reaches worker node_modules, whose
+		// vendored test files vitest's default excludes don't cover outside the root.
+		include: [
+			"src/**/*.{test,spec}.{js,ts}",
+			...mountedChildRepos().flatMap((r) => [
+				`../${r}/lib/**/*.{test,spec}.{js,ts}`,
+				`../${r}/routes/**/*.{test,spec}.{js,ts}`,
+			]),
+		],
+		// Same as ReTreever's runner — without it a spy leaks across tests and
+		// bakeService's geolocation/indexedDB stubs bleed into the next file.
+		clearMocks: true,
 	},
 };
 });

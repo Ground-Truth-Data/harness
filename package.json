@@ -1,6 +1,6 @@
 {
 	"name": "@retreever/create-rapper",
-	"version": "0.1.4",
+	"version": "0.1.9",
 	"type": "module",
 	"engines": {
 		"node": ">=22"
@@ -62,9 +62,10 @@
 		"getcache"
 	],
 	"bin": {
-		"create-rapper": "./_director/bin/create.mjs"
+		"create-rapper": "./bin/create-rapper.mjs"
 	},
 	"files": [
+		"bin/",
 		"scripts/",
 		"src/",
 		"rig/",
