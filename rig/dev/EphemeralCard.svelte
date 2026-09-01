@@ -79,7 +79,10 @@ const tOtherOrigin = $derived(
 );
 const tHref = $derived(
 	T_OTHER_ORIGIN
-		? (tOtherOrigin ?? T_OTHER_ORIGIN) + (tOtherPath ?? TIER_HOME) + page.url.search
+		// search AND hash ride along: the map keeps its camera in the hash
+		// (#zoom/lat/lng), and origin-scoped storage can't cross tiers —
+		// the URL is the only carrier that can.
+		? (tOtherOrigin ?? T_OTHER_ORIGIN) + (tOtherPath ?? TIER_HOME) + page.url.search + page.url.hash
 		: undefined,
 );
 let collapsed = $state(false);
