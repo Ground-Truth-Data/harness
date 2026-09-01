@@ -103,18 +103,24 @@ mounted.
 
 ### Environment
 
-Copy `.env.example` to `rapper/.env` and fill in whichever your component needs.
-Nothing here is required by rapper itself — each variable belongs to a component:
+The installer writes `rapper/.env` for the component it mounts; a hand-cloned
+rapper starts from `.env.example` (copy it to `rapper/.env`). Nothing here is
+required by rapper itself — each variable belongs to a component:
 
 | Variable | Needed by | Unset means |
 |---|---|---|
 | `VITE_TILES_HOST` | `getCache_OfflineMap` | no tiles are downloaded; the satellite layer still draws, so it reads as "roads are broken" — the console says so on the first line |
 | `VITE_MAPBOX_TOKEN` | `getCache_OnlineMap`, `ReTreever_where` | no map is created; the page says which variable is missing |
 
-Neither has a default on purpose: a baked-in tile host bills someone else's
-Cloudflare account, and a baked-in Mapbox token bills someone else's Mapbox
-account. `.env.example` explains both, including how to run the offline tiles
-locally with no cloud account at all.
+`npm create` fills in `VITE_TILES_HOST` with Ground Truth's public, read-only
+tile hosts (`tiles-prod.getcache.org`, `tiles-dev.getcache.org`), so the
+offline map works on day one with no account. Edit `rapper/.env` to point it at
+your own worker; `.env.example` shows how to run one locally with no cloud
+account at all. That default lives in the installer, never in the component:
+the component bakes in no host (its `tierNaming.test.ts` fails if one appears),
+so a fork or a lifted copy never inherits someone else's bill.
+
+`VITE_MAPBOX_TOKEN` has no default — a token is billed to whoever created it.
 
 ## How it works
 
