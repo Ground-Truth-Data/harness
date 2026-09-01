@@ -77,8 +77,8 @@ export function noEscapeHatch(repoRoot: string): Plugin {
 								`  repoint. A raw ../../ climb hardcodes today's folder layout\n` +
 								`  into a source file, and it breaks silently the next time\n` +
 								`  anything moves.\n\n` +
-								`  Use $parent/siblings/<child>/... (svelte.config.js kit.alias), or\n` +
-								`  move the file inside the repo.\n`),
+								`  Import a sibling child by its package name (@ground-truth/<child>/...),\n` +
+								`  or move the file inside the repo.\n`),
 				);
 			}
 

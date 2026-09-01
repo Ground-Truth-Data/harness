@@ -1,1 +1,1 @@
-export { load } from "$parent/siblings/ReTreever_who_what/routes/[tab=searchTab]/+page";
+export { load } from "@ground-truth/retreever-who-what/routes/[tab=searchTab]/+page";

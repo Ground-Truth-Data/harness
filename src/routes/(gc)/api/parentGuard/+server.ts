@@ -1,1 +1,1 @@
-export { GET } from "$parent/siblings/getCache_OfflineMap/routes/api/parentGuard/+server";
+export { GET } from "@ground-truth/getcache-offlinemap/routes/api/parentGuard/+server";

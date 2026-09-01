@@ -1,5 +1,5 @@
 <script lang="ts">
-import Page from "$parent/siblings/getCache_OnlineMap/routes/map/+page.svelte";
+import Page from "@ground-truth/getcache-onlinemap/routes/map/+page.svelte";
 </script>
 
 <Page />
