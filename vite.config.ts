@@ -20,8 +20,6 @@ function mountedChildRepo(): string | undefined {
 	}
 }
 
-// Every child rapper serves: the scaffold's one, or every non-tier row in the registry.
-// (Tiers would be harmless anyway — their `paths` are empty, so they contribute no routes.)
 function mountedChildRepos(): string[] {
 	const one = mountedChildRepo();
 	if (one) return [one];
@@ -29,7 +27,7 @@ function mountedChildRepos(): string[] {
 		const reg = registry();
 		return [...reg.matchAll(/repo:\s*"([^"]+)"/g)]
 			.filter((m) => {
-				// Bound the check to THIS record, same trick as mountedChildRoutes below.
+				// Bounded to this record, or the search bleeds into the next one.
 				const recEnd = reg.indexOf("\n\t},", m.index);
 				return !reg.slice(m.index, recEnd === -1 ? undefined : recEnd).includes("tier: true");
 			})
@@ -49,10 +47,9 @@ function mountedChildRoutes() {
 			p.startsWith("/offline") || p.startsWith("/map");
 
 		return mountedChildRepos().flatMap((repo) => {
-			// The record for that repo, then the `paths` array inside it.
 			const recIdx = reg.indexOf(`repo: "${repo}"`);
 			if (recIdx === -1) return [];
-			// Bound every later match to THIS record — without it, a record with no soloPaths silently borrows the next record's.
+			// Bounded to this record — unbounded, a record with no soloPaths silently borrows the next one's.
 			const recEnd = reg.indexOf("\n\t},", recIdx);
 			const rec = reg.slice(recIdx, recEnd === -1 ? undefined : recEnd);
 			const pathsMatch = rec.match(/paths:\s*\[([^\]]*)\]/);
@@ -80,7 +77,7 @@ function mountedChildRoutes() {
 	}
 }
 
-// Falls back to the first MIRRORED path — never solo, since a solo path only exists on this side and offering it to the other tier would 404; no mirrored paths at all falls back to "/".
+// First MIRRORED path — a solo path exists only on this side and would 404 on the other; none at all → "/".
 function otherHome(): string {
 	const rows = mountedChildRoutes();
 	return rows[0]?.otherPath ?? "/";
@@ -117,7 +114,7 @@ function printLandingUrl() {
 					address: () => { port: number } | null;
 				}).address();
 				if (!addr) return;
-					// setTimeout(0) so this lands after Vite's own "ready in" banner, not racing it into the middle of the output.
+				// setTimeout(0) so this lands after Vite's own "ready in" banner, not in the middle of it.
 				setTimeout(() => {
 					server.config.logger.info(
 						`  \x1b[32m➜\x1b[0m  \x1b[1mStart here:\x1b[0m http://localhost:${addr.port}${landing}`,
@@ -145,7 +142,6 @@ const tierFacts = dev
 		),
 		// NOT "/" — ReTreever's "/" is its marketing homepage, not the search this child mirrors (that's /who), so falling back to "/" would land on a working but wrong page.
 		"import.meta.env.VITE_OTHER_HOME": JSON.stringify(otherHome()),
-		// Rapper's own default view, for the OTHER tier's fallback — reached only for a route neither table lists.
 		// Route table is derived from the mounted child (svelte.config.js + registry), not hand-typed — hand-typed rows drift from whichever child is actually mounted. Double JSON.stringify: define pastes this as literal source, so it must serialize to valid JS.
 		"import.meta.env.VITE_TIER_ROUTES": JSON.stringify(
 			JSON.stringify(mountedChildRoutes()),
@@ -177,11 +173,9 @@ return {
 		},
 	},
 	test: {
-		// The mounted children's suites ship in their clones (50+ files in getCache_OfflineMap
-		// alone) — without the sibling globs, a scaffolded developer has the whole child test
-		// suite sitting beside rapper and nothing that runs it. Scoped to lib/ + routes/ like
-		// ReTreever's runner: a bare ../<child>/** glob reaches worker node_modules, whose
-		// vendored test files vitest's default excludes don't cover outside the root.
+		// Without the sibling globs a scaffold has the whole child suite beside rapper and
+		// nothing that runs it. Scoped to lib/ + routes/: a bare ../<child>/** reaches worker
+		// node_modules, whose vendored test files vitest's default excludes miss outside the root.
 		include: [
 			"src/**/*.{test,spec}.{js,ts}",
 			...mountedChildRepos().flatMap((r) => [
