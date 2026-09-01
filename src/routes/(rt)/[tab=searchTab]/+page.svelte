@@ -1,5 +1,5 @@
 <script lang="ts">
-import Page from "@ground-truth/retreever-who-what/routes/[tab=searchTab]/+page.svelte";
+import Page from "$parent/siblings/ReTreever_who_what/routes/[tab=searchTab]/+page.svelte";
 let { data } = $props();
 </script>
 

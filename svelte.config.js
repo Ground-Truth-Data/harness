@@ -35,6 +35,12 @@ const config = {
          * it true.
          */
         alias: {
+            // Every child is a sibling of rapper, one level up. The `../` lives
+            // in this one line, never in an import — noEscapePlugin rejects a
+            // raw climb in a specifier.
+            "$parent/siblings": "../",
+            "$parent/siblings/*": "../*",
+
             // $parent is the mounting tier, whichever it is: rapper and
             // ReTreever each point it at THEMSELVES, so a child's
             // `$parent/src/app.unique.css` lands in whichever tier is serving.

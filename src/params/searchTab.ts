@@ -1,1 +1,1 @@
-export { match } from "@ground-truth/retreever-who-what/params/searchTab";
+export { match } from "$parent/siblings/ReTreever_who_what/params/searchTab";

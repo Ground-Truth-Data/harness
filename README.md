@@ -83,9 +83,8 @@ it is the same one behind `npm create vite` and `npm create svelte`.
 **One rapper, one component.** A second component means a second install, in a
 second folder. What you get is a small npm workspace — the root `package.json`
 lists `rapper` and the component as members, so one `npm install` at the root
-hoists every dependency once and symlinks the component into `node_modules`
-under its package name (`@ground-truth/getcache-offlinemap`), which is how
-rapper imports it:
+hoists every dependency once — laid out flat, because that adjacency is what
+the `$parent/siblings` alias resolves against:
 
 ```
 getCache_OfflineMap/        <- the project root: package.json { workspaces }, node_modules/

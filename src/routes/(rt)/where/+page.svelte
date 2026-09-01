@@ -1,5 +1,5 @@
 <script lang="ts">
-import Page from "@ground-truth/retreever-where/routes/where/+page.svelte";
+import Page from "$parent/siblings/ReTreever_where/routes/where/+page.svelte";
 </script>
 
 <Page />
