@@ -1,13 +1,13 @@
 /**
  * `npm run dev` = vite + the mounted child's local tile worker, one command.
  *
- * The offline map's local_dev tier is a separate wrangler process; without it
+ * The offline map's worker-local-dev tier is a separate wrangler process; without it
  * every download dies on the only tier a contributor can reach, and the
  * handoff needed a "second terminal" paragraph. This starts it alongside vite
  * when (and only when) the mounted child ships one.
  *
  * Skips the worker, never fails the dev server, when:
- *  - no sibling child has workers/local_dev with a dev:local script
+ *  - no sibling child has workers/worker-local-dev with a dev:local script
  *  - port 8787 is already listening (a worker is running — the workspace case)
  */
 import { spawn, spawnSync } from "node:child_process";
@@ -20,7 +20,7 @@ const root = path.resolve(here, "..");
 
 // scaffold layout: child INSIDE the wrapper (rapper/getCache_OfflineMap);
 // workspace layout: child BESIDE it (fetch/getCache_OfflineMap). Probe both.
-const workerDir = ["getCache_OfflineMap/workers/local_dev", "../getCache_OfflineMap/workers/local_dev"]
+const workerDir = ["getCache_OfflineMap/workers/worker-local-dev", "../getCache_OfflineMap/workers/worker-local-dev"]
 	.map((p) => path.resolve(root, p))
 	.find((p) => existsSync(path.join(p, "package.json")));
 
@@ -47,7 +47,7 @@ const start = (cmd, args, opts, name) => {
 	p.on("exit", (code) => {
 		// vite dying ends the run; the worker dying just logs — the app still works against cloud tiers.
 		if (name === "vite") shutdown(code ?? 0);
-		else console.error(`[dev] ${name} exited (${code}) — local_dev tier is down until you restart it.`);
+		else console.error(`[dev] ${name} exited (${code}) — worker-local-dev tier is down until you restart it.`);
 	});
 	children.push(p);
 	return p;
