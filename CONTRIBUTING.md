@@ -45,18 +45,13 @@ one level up from rapper. Nest it and `../` points at the wrong folder and every
 import inside it fails.
 
 That layout then decides where `node_modules` has to go. **Install at the
-project root — not inside `rapper/`.** Node resolves a bare specifier by walking
-UP from the importing file looking for `node_modules`. The child is a sibling of
-rapper, so walking up from `ReTreever_who_what/lib/cn.ts` reaches the project
-root and stops; it never descends into `rapper/node_modules`. Installing inside
-rapper therefore satisfies rapper's own imports and none of the child's.
-
-The root is the one directory that is an ancestor of BOTH — exactly the role
-`fetch/` plays in the development workspace. So rapper's dependencies and the
-child's are merged and declared there, and installed once, at the top. The
-child's pins win on conflict: they are the versions its code was tested against,
-and a child that silently borrowed its parent's version is a hole that only
-shows up once it is lifted out.
+project root — never inside `rapper/`.** The root is an npm **workspace** whose
+members are `rapper` and the child: `npm install` there hoists every dependency
+once, and Node resolves a bare specifier by walking UP from the importing file
+to that one `node_modules` — exactly the role `fetch/` plays in the development
+workspace, where both parents and every child are members. Each member declares
+its own dependencies; there is no merging step, and `dedupe` is not needed when
+there is one copy.
 
 ### The offline map needs ~50 MB of assets first
 
