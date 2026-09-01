@@ -39,24 +39,21 @@ rails are a toggle on that page, not a second URL.
 
 ### Why the child is a SIBLING, and why the install is at the root
 
-The adjacency is not a stylistic choice — it is what the alias resolves against.
-`svelte.config.js` declares `"$parent/siblings": "../"`, so the child must sit
-one level up from rapper. Nest it and `../` points at the wrong folder and every
-import inside it fails.
+rapper imports the child by its package name — `@ground-truth/<child>/lib/…` —
+and nothing in rapper knows where the folder is. What makes the name resolve is
+the project root being an npm **workspace** whose members are `rapper` and the
+child: `npm install` there symlinks each member into the root `node_modules`
+under its name and hoists every dependency once. A child's `exports` map is
+what makes its `lib/`, `routes/` and `params/` reachable that way (a rune
+module, `x.svelte.ts`, is imported as `x.svelte.js` — the map turns `.js` into
+`.ts`, and a bare `x.svelte` would be read as a component).
 
-That layout then decides where `node_modules` has to go. **Install at the
-project root — not inside `rapper/`.** Node resolves a bare specifier by walking
-UP from the importing file looking for `node_modules`. The child is a sibling of
-rapper, so walking up from `ReTreever_who_what/lib/cn.ts` reaches the project
-root and stops; it never descends into `rapper/node_modules`. Installing inside
-rapper therefore satisfies rapper's own imports and none of the child's.
-
-The root is the one directory that is an ancestor of BOTH — exactly the role
-`fetch/` plays in the development workspace. So rapper's dependencies and the
-child's are merged and declared there, and installed once, at the top. The
-child's pins win on conflict: they are the versions its code was tested against,
-and a child that silently borrowed its parent's version is a hole that only
-shows up once it is lifted out.
+So **install at the project root — never inside `rapper/`.** Node resolves a
+bare specifier by walking UP from the importing file, and the root is the one
+directory that is an ancestor of both — exactly the role `fetch/` plays in the
+development workspace, where both parents and every child are members. Each
+member declares its own dependencies; there is no merging step, and `dedupe`
+is not needed when there is one copy.
 
 ### The offline map needs ~50 MB of assets first
 
@@ -78,9 +75,9 @@ The guards discover children by **shape** — any folder containing a `lib/` —
 a new child is governed the day it is created, whoever owns it.
 
 1. **A child never names its parent.** Inside a child, imports are relative, or
-   they go through an alias the parent fills in. rapper defines `$parent`,
-   `$parent/siblings` and the shared tree `$rig` / `$gc` / `$rt` — and nothing
-   else. A raw `../../rapper/…` climb NAMES rapper, so the ReTreever side dies
+   they go through an alias the parent fills in. rapper defines `$parent` and
+   the shared tree `$rig` / `$gc` / `$rt` — and nothing else; a sibling child is
+   imported by its package name. A raw `../../rapper/…` climb NAMES rapper, so the ReTreever side dies
    and the switch with it; `noEscapePlugin` throws on it.
 2. **A child never imports another child** except where its own `deps.json`
    declares it. Two children that import each other freely are one child wearing

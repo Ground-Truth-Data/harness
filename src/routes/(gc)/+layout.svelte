@@ -1,6 +1,6 @@
 <script lang="ts">
 import PhoneRig from "$gc/PhoneRig.svelte";
-import { configureTilesFromEnv } from "$parent/siblings/getCache_OfflineMap/lib/worker/worker-local-dev/tilesFromEnv";
+import { configureTilesFromEnv } from "@ground-truth/getcache-offlinemap/lib/worker/worker-local-dev/tilesFromEnv";
 
 configureTilesFromEnv();
 

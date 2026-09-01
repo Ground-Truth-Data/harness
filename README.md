@@ -81,20 +81,24 @@ it is the same one behind `npm create vite` and `npm create svelte`.
 ## What you end up with
 
 **One rapper, one component.** A second component means a second install, in a
-second folder. What you get is a flat pair of folders, because that adjacency
-is what the `$parent/siblings` alias resolves against:
+second folder. What you get is a small npm workspace — the root `package.json`
+lists `rapper` and the component as members, so one `npm install` at the root
+hoists every dependency once and symlinks the component into `node_modules`
+under its package name (`@ground-truth/getcache-offlinemap`), which is how
+rapper imports it:
 
 ```
-getCache_OfflineMap/        <- the project root; deps installed HERE
+getCache_OfflineMap/        <- the project root: package.json { workspaces }, node_modules/
 ├── package.json
-├── rapper/                 <- the shell
-└── getCache_OfflineMap/    <- the component, a git CLONE, SIBLING of rapper
+├── rapper/                 <- the shell; rapper/mounted.json names the component
+└── getCache_OfflineMap/    <- the component, a git CLONE, a workspace member
 ```
 
-**The component folder is a real git clone** of its GitHub repo — branch, push
-and open a PR from inside it. (If git or the network is missing at install
-time, a bundled snapshot is copied instead; you get working code but no
-history.) A component that imports from a sibling component brings that
+**The component folder is a real git clone** of its GitHub repo, checked out
+at the exact commit this version of rapper was packed and tested with — branch,
+push and open a PR from inside it. (If that commit can't be fetched — no git,
+no network, or it hasn't been pushed yet — the bundled snapshot of the same
+tree is copied instead; you get identical code but no history.) A component that imports from a sibling component brings that
 sibling along too, declared in its own `deps.json` — cloned beside it, never
 mounted.
 
@@ -103,18 +107,24 @@ mounted.
 
 ### Environment
 
-Copy `.env.example` to `rapper/.env` and fill in whichever your component needs.
-Nothing here is required by rapper itself — each variable belongs to a component:
+The installer writes `rapper/.env` for the component it mounts; a hand-cloned
+rapper starts from `.env.example` (copy it to `rapper/.env`). Nothing here is
+required by rapper itself — each variable belongs to a component:
 
 | Variable | Needed by | Unset means |
 |---|---|---|
 | `VITE_TILES_HOST` | `getCache_OfflineMap` | no tiles are downloaded; the satellite layer still draws, so it reads as "roads are broken" — the console says so on the first line |
 | `VITE_MAPBOX_TOKEN` | `getCache_OnlineMap`, `ReTreever_where` | no map is created; the page says which variable is missing |
 
-Neither has a default on purpose: a baked-in tile host bills someone else's
-Cloudflare account, and a baked-in Mapbox token bills someone else's Mapbox
-account. `.env.example` explains both, including how to run the offline tiles
-locally with no cloud account at all.
+`npm create` fills in `VITE_TILES_HOST` with Ground Truth's public, read-only
+tile hosts (`tiles-prod.getcache.org`, `tiles-dev.getcache.org`), so the
+offline map works on day one with no account. Edit `rapper/.env` to point it at
+your own worker; `.env.example` shows how to run one locally with no cloud
+account at all. That default lives in the installer, never in the component:
+the component bakes in no host (its `tierNaming.test.ts` fails if one appears),
+so a fork or a lifted copy never inherits someone else's bill.
+
+`VITE_MAPBOX_TOKEN` has no default — a token is billed to whoever created it.
 
 ## How it works
 
@@ -123,17 +133,18 @@ no framework and no `node_modules`. It has nothing to `npm run dev` on its own;
 rapper is what makes it runnable.
 
 An installed rapper serves the component's own `routes/` directly:
-`kit.files` in `svelte.config.js` names that component's `routes/`, `params/`
-and `hooks.ts`, so there is one route tree and no forwarding pages to drift.
+`rapper/mounted.json` names the component, and `svelte.config.js` derives
+`kit.files` (`routes/`, `params/`, `hooks.ts`) from it, so there is one route
+tree and no forwarding pages to drift.
 (The git checkout of rapper is different: its own `src/routes/` re-exports
 every component's pages at once, for developing them side by side; the
 installer deletes that tree.) The dev shell — logo, the component's name, one
 link per view — is `rig/Layout.svelte`, rendered by the component's layout,
 and it only appears in dev. Branding is rapper's job, never the component's.
 
-Dependencies are declared and installed at the PROJECT ROOT, not inside
-`rapper/`. Node resolves bare imports by walking up, and the component is
-rapper's sibling — so the root is the one folder that is an ancestor of both.
+Dependencies are installed at the PROJECT ROOT, not inside `rapper/` — the
+root is an npm workspace and the one folder that is an ancestor of both. Each
+member still declares its own dependencies; npm hoists them once.
 That is why `npm install` runs at the root and not in `rapper/`.
 
 rapper is a dev harness, not a deployment target. The ReTreever production
