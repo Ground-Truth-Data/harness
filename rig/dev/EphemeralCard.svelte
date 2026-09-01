@@ -79,6 +79,9 @@ const tOtherOrigin = $derived(
 );
 const tHref = $derived(
 	T_OTHER_ORIGIN
+		// search rides along here; the hash is appended at CLICK time by
+		// ParentPill (carryHash) — replaceState hash writes update no store,
+		// so a derived hash could only ever be stale.
 		? (tOtherOrigin ?? T_OTHER_ORIGIN) + (tOtherPath ?? TIER_HOME) + page.url.search
 		: undefined,
 );

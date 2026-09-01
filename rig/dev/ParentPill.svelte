@@ -77,6 +77,19 @@ let {
 } = $props();
 
 const other = $derived(current === leftLabel ? rightLabel : leftLabel);
+
+/**
+ * The URL fragment rides across AS OF THE CLICK. The map keeps its camera in
+ * the hash (#zoom/lat/lng), written via history.replaceState, which no store
+ * tracks — a derived href could only ever carry a stale one. So it is
+ * resolved on the live location just before the navigation the anchor itself
+ * performs. pointerdown covers mouse/touch (middle-click included); click
+ * covers keyboard Enter.
+ */
+function carryHash(e: Event) {
+	const a = e.currentTarget as HTMLAnchorElement;
+	if (location.hash) a.hash = location.hash;
+}
 </script>
 
 {#if unavailable}
@@ -108,6 +121,8 @@ const other = $derived(current === leftLabel ? rightLabel : leftLabel);
 		class="host-pill"
 		{href}
 		title={`Open this page under ${other} — a different server, with none of this one's layout or assets.`}
+		onpointerdown={carryHash}
+		onclick={carryHash}
 	>
 		<span class:on={current === leftLabel}>{leftLabel}</span><span
 			class:on={current === rightLabel}>{rightLabel}</span
