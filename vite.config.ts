@@ -115,6 +115,12 @@ return {
 
 	// Parent name/origin injected here by RAPPER only — a child has two possible parents and ships standalone, so it must never hardcode this (see noParentNames.test.ts). Keys MUST be import.meta.env.VITE_*, not bare globals: a bare __X__ throws in a child cloned without rapper, and typeof __X__ === "string" makes Vite skip the substitution entirely.
 	define: tierFacts,
+	server: {
+		fs: {
+			// SvelteKit replaces Vite's default allow-list with src/, .svelte-kit and node_modules — the workspace root is never consulted — so rig/, gc/, rt/ and every sibling child 404 in dev without this. Kit appends to a list you set.
+			allow: [".."],
+		},
+	},
 	test: {
 		// Without the sibling globs a scaffold has the whole child suite beside rapper and
 		// nothing that runs it. Scoped to lib/ + routes/: a bare ../<child>/** reaches worker
