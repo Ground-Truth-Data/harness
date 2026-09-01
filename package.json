@@ -85,5 +85,6 @@
 	],
 	"publishConfig": {
 		"access": "public"
-	}
+	},
+	"packageManager": "npm@11.19.1"
 }
