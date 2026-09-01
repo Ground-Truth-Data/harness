@@ -1,5 +1,5 @@
 /**
- * ⛔ never hardcode a child's name here — rapper mounts exactly one, chosen at install time; resolve it from svelte.config.js's kit.files.routes instead.
+ * ⛔ never hardcode a child's name here — rapper mounts exactly one, chosen at install time; mounted.json says which.
  * ⛔ a child shipping no fetchAssets.sh is normal, not an error — must exit 0 or this reintroduces the failure it fixes.
  * ⛔ never swallow a child's fetchAssets.sh failure — propagate its exit code unchanged; that's the child's policy to set, not this wrapper's to overrule.
  */
@@ -11,22 +11,18 @@ import { fileURLToPath } from "node:url";
 const ROOT = resolve(dirname(fileURLToPath(import.meta.url)), "..");
 const DIM = "\x1b[2m", YEL = "\x1b[0;33m", GRN = "\x1b[0;32m", NC = "\x1b[0m";
 
-let routes;
+let child;
 try {
-	routes = (await import(`${ROOT}/svelte.config.js`)).default?.kit?.files?.routes;
+	child = (await import("./mounted.mjs")).mountedChild();
 } catch (e) {
-	// not fatal — a broken config is svelte-kit's own error to report; don't preempt it with a vaguer message here.
-	console.warn(`${YEL}assets: could not read svelte.config.js (${e.message}) — skipping.${NC}`);
+	console.warn(`${YEL}assets: could not read mounted.json (${e.message}) — skipping.${NC}`);
 	process.exit(0);
 }
-
-if (!routes) {
-	console.warn(`${YEL}assets: svelte.config.js defines no kit.files.routes — skipping.${NC}`);
+if (!child) {
+	console.log(`${DIM}assets: no child mounted (workspace checkout) — nothing to copy.${NC}`);
 	process.exit(0);
 }
-
-// "../<child>/routes" -> the child's own directory.
-const childDir = resolve(ROOT, routes, "..");
+const childDir = resolve(ROOT, "..", child);
 const script = resolve(childDir, "fetchAssets.sh");
 
 if (!existsSync(script)) {

@@ -1,101 +1,50 @@
 import { sveltekit } from "@sveltejs/kit/vite";
-import { existsSync, readFileSync } from "node:fs";
+import { existsSync } from "node:fs";
 import { fileURLToPath } from "node:url";
 import { defineConfig } from "vitest/config";
 import { noEscapeHatch } from "./src/lib/guards/noEscapePlugin";
+import { CHILDREN, childByRepo } from "./rig/childRegistry";
+import { mountedChild } from "./scripts/mounted.mjs";
 
 // No PWA plugin here on purpose — Get Cache is a Capacitor native app, no service worker/manifest needed; one left here before silently shipped an unused SW until it crossed workbox's precache limit and broke the build.
 
-const svelteConfig = () =>
-	readFileSync(fileURLToPath(new URL("./svelte.config.js", import.meta.url)), "utf8");
-const registry = () =>
-	readFileSync(fileURLToPath(new URL("./rig/childRegistry.ts", import.meta.url)), "utf8");
+const mountedChildRepo = (): string | undefined => mountedChild();
 
-// The ONE child a scaffold mounts (installer's line: routes: "../<Child>/routes"), or undefined when rapper serves its own src/routes — every child.
-function mountedChildRepo(): string | undefined {
-	try {
-		return svelteConfig().match(/routes:\s*"\.\.\/([^/"]+)\/routes"/)?.[1];
-	} catch {
-		return undefined;
-	}
-}
-
+// The scaffold's one child, or every non-tier record in the workspace checkout.
 function mountedChildRepos(): string[] {
 	const one = mountedChildRepo();
-	if (one) return [one];
-	try {
-		const reg = registry();
-		return [...reg.matchAll(/repo:\s*"([^"]+)"/g)]
-			.filter((m) => {
-				// Bounded to this record, or the search bleeds into the next one.
-				const recEnd = reg.indexOf("\n\t},", m.index);
-				return !reg.slice(m.index, recEnd === -1 ? undefined : recEnd).includes("tier: true");
-			})
-			.map((m) => m[1]);
-	} catch {
-		return [];
-	}
+	return one ? [one] : CHILDREN.filter((c) => !c.tier).map((c) => c.repo);
 }
 
 function mountedChildRoutes() {
-	try {
-		const reg = registry();
-		// Mirrored views are spelled identically across tiers, so each row is the identity; a child-only path ("/") maps nowhere and is dropped, not pointed at a nonexistent route.
-		// Other tier is split across THREE hostnames, not one origin — VITE_OTHER_ORIGIN alone is wrong for routes like /offline that live on the getcache host instead.
-		const GETCACHE_ORIGIN = "http://getcache.localhost:5173";
-		const onGetCacheSite = (p: string) =>
-			p.startsWith("/offline") || p.startsWith("/map");
+	// Other tier is split across THREE hostnames, not one origin — VITE_OTHER_ORIGIN alone is wrong for routes like /offline that live on the getcache host instead.
+	const GETCACHE_ORIGIN = "http://getcache.localhost:5173";
+	const onGetCacheSite = (p: string) => p.startsWith("/offline") || p.startsWith("/map");
 
-		return mountedChildRepos().flatMap((repo) => {
-			const recIdx = reg.indexOf(`repo: "${repo}"`);
-			if (recIdx === -1) return [];
-			// Bounded to this record — unbounded, a record with no soloPaths silently borrows the next one's.
-			const recEnd = reg.indexOf("\n\t},", recIdx);
-			const rec = reg.slice(recIdx, recEnd === -1 ? undefined : recEnd);
-			const pathsMatch = rec.match(/paths:\s*\[([^\]]*)\]/);
-			if (!pathsMatch) return [];
-			const paths = [...pathsMatch[1].matchAll(/"([^"]+)"/g)].map((x) => x[1]);
-
-			// Paths the child serves with no parent mirror (its standalone preview) — kept out so the pill never offers a route that 404s.
-			const soloMatch = rec.match(/soloPaths:\s*\[([^\]]*)\]/);
-			const solo = soloMatch
-				? [...soloMatch[1].matchAll(/"([^"]+)"/g)].map((x) => x[1])
-				: [];
-
-			return paths
-				.filter((p) => p !== "/" && !solo.includes(p))
-				.map((p) => ({
-					path: p,
-					otherPath: p,
-					repo,
-					...(onGetCacheSite(p) ? { otherOrigin: GETCACHE_ORIGIN } : {}),
-				}));
-		});
-	} catch {
-		// A dev-only convenience must never be the thing that stops a build.
-		return [];
-	}
+	return mountedChildRepos().flatMap((repo) => {
+		const rec = childByRepo(repo);
+		if (!rec) return [];
+		const solo = rec.soloPaths ?? [];
+		// Mirrored views are spelled identically across tiers, so each row is the identity; "/" and solo paths exist only on this side and would 404 on the other.
+		return rec.paths
+			.filter((p) => p !== "/" && !solo.includes(p))
+			.map((p) => ({
+				path: p,
+				otherPath: p,
+				repo,
+				...(onGetCacheSite(p) ? { otherOrigin: GETCACHE_ORIGIN } : {}),
+			}));
+	});
 }
 
 // First MIRRORED path — a solo path exists only on this side and would 404 on the other; none at all → "/".
 function otherHome(): string {
-	const rows = mountedChildRoutes();
-	return rows[0]?.otherPath ?? "/";
+	return mountedChildRoutes()[0]?.otherPath ?? "/";
 }
 
-// Vite's printed URL isn't where the app starts — "/" reroutes to the landing view; read from the mounted hooks file's own constant rather than restated.
+// Vite's printed URL isn't where the app starts — "/" reroutes to the landing view. Workspace mode lands on the first child, which src/hooks.ts must agree with.
 function childLandingPath(): string | undefined {
-	try {
-		const hooksPath = svelteConfig().match(/universal:\s*"([^"]+)"/)?.[1];
-		if (!hooksPath) return undefined;
-		const hooks = readFileSync(
-			fileURLToPath(new URL(`./${hooksPath}.ts`, import.meta.url)),
-			"utf8",
-		);
-		return hooks.match(/(?:const DEFAULT = |return )"([^"]+)"/)?.[1];
-	} catch {
-		return undefined;
-	}
+	return childByRepo(mountedChildRepos()[0] ?? "")?.defaultPath;
 }
 
 // Reads the OS-granted port after "listening", not the configured one — Vite falls back to 5175/5176+ when 5174 is taken, exactly when two instances are running and the ports most need telling apart.
@@ -166,12 +115,6 @@ return {
 
 	// Parent name/origin injected here by RAPPER only — a child has two possible parents and ships standalone, so it must never hardcode this (see noParentNames.test.ts). Keys MUST be import.meta.env.VITE_*, not bare globals: a bare __X__ throws in a child cloned without rapper, and typeof __X__ === "string" makes Vite skip the substitution entirely.
 	define: tierFacts,
-	server: {
-		fs: {
-			// allow: [".."] — the mounted child is a SIBLING of rapper, not a subfolder, so Vite's default allow-list 404s it even when the imported file sits inside rapper's own folder; it's the IMPORTER's location that's checked, not the target's.
-			allow: [".."],
-		},
-	},
 	test: {
 		// Without the sibling globs a scaffold has the whole child suite beside rapper and
 		// nothing that runs it. Scoped to lib/ + routes/: a bare ../<child>/** reaches worker

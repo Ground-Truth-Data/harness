@@ -1,8 +1,14 @@
 import adapterVercel from "@sveltejs/adapter-vercel";
 import adapterStatic from "@sveltejs/adapter-static";
 import { vitePreprocess } from "@sveltejs/vite-plugin-svelte";
+import { mountedChild } from "./scripts/mounted.mjs";
 
 const isCapacitor = process.env.BUILD_TARGET === "cap";
+// Workspace checkout: rapper's own src/ serves every child. Scaffold: the installer writes
+// mounted.json and the three keys below follow it together — `params` and `hooks.universal`
+// default to src/, so pointing `routes` alone loses a child's matchers (loud) and its reroute
+// hook (SILENT: "/" 404s, build green). A wrong folder also builds green and emits no pages.
+const tree = mountedChild() ? `../${mountedChild()}` : "src";
 
 /** @type {import('@sveltejs/kit').Config} */
 const config = {
@@ -29,12 +35,6 @@ const config = {
          * it true.
          */
         alias: {
-            // Every child is a sibling of rapper, one level up. The `../` lives
-            // in this one line, never in an import — noEscapePlugin rejects a
-            // raw climb in a specifier.
-            "$parent/siblings": "../",
-            "$parent/siblings/*": "../*",
-
             // $parent is the mounting tier, whichever it is: rapper and
             // ReTreever each point it at THEMSELVES, so a child's
             // `$parent/src/app.unique.css` lands in whichever tier is serving.
@@ -57,24 +57,11 @@ const config = {
             "$rt/*": "./rt/*",
 
         },
-        /**
-         * Workspace: rapper's own src/routes, every child at once. Scaffold:
-         * the installer (rapper_director/bin/create.mjs) rewrites all three
-         * keys to ../<child>/… and deletes src/routes, src/params, src/hooks.ts.
-         *
-         * ⛔ Three keys, one tree. `params` and `hooks.universal` default to
-         * src/, so repointing `routes` alone loses the child's matchers (loud)
-         * and its reroute hook (SILENT: "/" 404s, build green).
-         * ⛔ `routes` stays the FIRST key with no comment between `files: {`
-         * and it — the installer anchors on /files:\s*\{\s*routes:/.
-         * A wrong path builds green and emits no pages; SvelteKit does not
-         * error on a missing route tree.
-         */
         files: {
-            routes: "src/routes",
-            params: "src/params",
+            routes: `${tree}/routes`,
+            params: `${tree}/params`,
             hooks: {
-                universal: "src/hooks",
+                universal: `${tree}/hooks`,
             },
         },
     },
