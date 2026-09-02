@@ -283,9 +283,38 @@
 		text-decoration: underline;
 		text-underline-offset: 2px;
 	}
-	
+
 	:where(p, li) a:hover {
 		opacity: 0.8;
+	}
+
+	/* Get Cache prose — .gc-shell wraps every public Get Cache page.
+	   Emphasis is gold, an inline link is rust: two different jobs, so they
+	   never share one accent. A component must not re-colour <strong> or <a>. */
+	/* .rt-text-title as well as h1: the footer tagline is display type on every
+	   page but only the LANDING one, where it is the page's heading, is an h1. */
+	.gc-shell :where(h1, .rt-text-title, strong, b) {
+		text-shadow: var(--rt-glow-text);
+	}
+
+	.gc-shell :where(strong, b) {
+		color: var(--rt-yellow);
+	}
+
+	.gc-shell :where(p, li) a {
+		color: var(--rt-rust);
+	}
+
+	/* Must follow the emphasis rule — equal specificity, and a <strong> inside
+	   a link would otherwise take the gold back off it. */
+	.gc-shell :where(p, li) a :where(*) {
+		color: inherit;
+	}
+
+	.gc-shell :where(p, li) a:hover,
+	.gc-shell :where(p, li) a:focus-visible {
+		color: var(--rt-meta);
+		opacity: 1;
 	}
 
 	button:active, [role="button"]:active,
