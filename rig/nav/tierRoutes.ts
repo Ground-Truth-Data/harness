@@ -51,7 +51,7 @@ export type TierRoute = {
 	 * The ORIGIN serving `otherPath`, when it is not the other tier's default.
 	 *
 	 * A tier is not always one server. MEASURED 27 Aug 2026: the pill on
-	 * `:5174/offline` correctly produced `/offline`, then pointed it at
+	 * `:5174/offline` correctly produced `/app/offline`, then pointed it at
 	 * retreever.localhost:5173 — where that path 404s, because /offline is
 	 * served on the getcache host and only /who on the retreever one. One
 	 * injected origin per tier cannot address a tier that splits by hostname,

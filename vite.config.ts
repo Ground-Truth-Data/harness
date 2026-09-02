@@ -3,7 +3,7 @@ import { existsSync } from "node:fs";
 import { fileURLToPath } from "node:url";
 import { defineConfig } from "vitest/config";
 import { noEscapeHatch } from "./src/lib/guards/noEscapePlugin";
-import { CHILDREN, childByRepo } from "./rig/childRegistry";
+import { CHILDREN, childByRepo, mountPath } from "./rig/childRegistry";
 import { mountedChild } from "./scripts/mounted.mjs";
 
 // No PWA plugin here on purpose — Get Cache is a Capacitor native app, no service worker/manifest needed; one left here before silently shipped an unused SW until it crossed workbox's precache limit and broke the build.
@@ -19,7 +19,6 @@ function mountedChildRepos(): string[] {
 function mountedChildRoutes() {
 	// Other tier is split across THREE hostnames, not one origin — VITE_OTHER_ORIGIN alone is wrong for routes like /offline that live on the getcache host instead.
 	const GETCACHE_ORIGIN = "http://getcache.localhost:5173";
-	const onGetCacheSite = (p: string) => p.startsWith("/offline") || p.startsWith("/map");
 
 	return mountedChildRepos().flatMap((repo) => {
 		const rec = childByRepo(repo);
@@ -29,10 +28,10 @@ function mountedChildRoutes() {
 		return rec.paths
 			.filter((p) => p !== "/" && !solo.includes(p))
 			.map((p) => ({
-				path: p,
-				otherPath: p,
+				path: mountPath(rec, p),
+				otherPath: mountPath(rec, p),
 				repo,
-				...(onGetCacheSite(p) ? { otherOrigin: GETCACHE_ORIGIN } : {}),
+				...(rec.app ? { otherOrigin: GETCACHE_ORIGIN } : {}),
 			}));
 	});
 }
@@ -44,7 +43,8 @@ function otherHome(): string {
 
 // Vite's printed URL isn't where the app starts — "/" reroutes to the landing view. Workspace mode lands on the first child, which src/hooks.ts must agree with.
 function childLandingPath(): string | undefined {
-	return childByRepo(mountedChildRepos()[0] ?? "")?.defaultPath;
+	const rec = childByRepo(mountedChildRepos()[0] ?? "");
+	return rec ? mountPath(rec) : undefined;
 }
 
 // Reads the OS-granted port after "listening", not the configured one — Vite falls back to 5175/5176+ when 5174 is taken, exactly when two instances are running and the ports most need telling apart.

@@ -29,7 +29,7 @@ import type { TierRoute } from "./tierRoutes";
  * who_what's layout was the one loaded. The label named the INSTALL, not the
  * page. A lookup by pathname is the only thing that can be right for both.
  */
-import { childByRepo, childForPath, githubUrl } from "$rig/childRegistry";
+import { childByRepo, childForPath, githubUrl, mountPath } from "$rig/childRegistry";
 
 type View = { href: string; label: string; missing?: boolean };
 
@@ -194,7 +194,7 @@ const mountedChild = $derived(MOUNTED ? childByRepo(MOUNTED) : undefined);
 
 const viewChild = $derived(mountedChild ?? childForPath(pathname));
 
-const landing = $derived(viewChild?.defaultPath ?? "/");
+const landing = $derived(viewChild ? mountPath(viewChild) : "/");
 const viewRepo = $derived(
 	viewChild?.repo ?? currentRepo(pathname, routes) ?? repo,
 );
@@ -220,9 +220,10 @@ const offMountedChild = $derived.by(() => {
 	if (!mountedChild || !pathname) return false;
 	const paths = mountedChild.paths ?? [];
 	if (paths.length === 0) return false;
-	return !paths.some(
-		(p) => pathname === p || (p !== "/" && pathname.startsWith(p + "/")),
-	);
+	return !paths.some((raw) => {
+		const p = mountPath(mountedChild, raw);
+		return pathname === p || (raw !== "/" && pathname.startsWith(p + "/"));
+	});
 });
 
 /** Built from the record, so the org appears once in the whole codebase. */

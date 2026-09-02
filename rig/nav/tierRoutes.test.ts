@@ -20,7 +20,7 @@ const RETREEVER: TierRoute[] = [
 	// One-to-one, as the real table now is: the child serves both views.
 	{ path: "/who", otherPath: "/who", repo: "ReTreever_who_what" },
 	{ path: "/what", otherPath: "/what", repo: "ReTreever_who_what" },
-	{ path: "/offline", otherPath: "/offline", repo: "getCache_OfflineMap" },
+	{ path: "/app/offline", otherPath: "/app/offline", repo: "getCache_OfflineMap" },
 	{ path: "/where", repo: "getCache_OfflineMap" },
 ];
 
@@ -33,12 +33,12 @@ describe("otherTierPath", () => {
 	it("carries the current view across, not a fixed page", () => {
 		// THE BUG: both of these used to return "/" — the hardcoded otherPath.
 		expect(otherTierPath("/what", RETREEVER)).toBe("/what");
-		expect(otherTierPath("/offline", RETREEVER)).toBe("/offline");
+		expect(otherTierPath("/app/offline", RETREEVER)).toBe("/app/offline");
 	});
 
 	it("resolves a nested route through its parent entry", () => {
 		expect(otherTierPath("/who/acme", RETREEVER)).toBe("/who");
-		expect(otherTierPath("/offline/tiles", RETREEVER)).toBe("/offline");
+		expect(otherTierPath("/app/offline/tiles", RETREEVER)).toBe("/app/offline");
 	});
 
 	it("falls back to home when the other tier has no counterpart", () => {
@@ -57,7 +57,7 @@ describe("otherTierPath", () => {
 	it("does not let a '/' entry swallow every other path", () => {
 		// "/" is a prefix of everything; matched as a prefix it would win the
 		// fallback for unlisted routes and hide them.
-		expect(otherTierPath("/debug", RAPPER)).toBe(TIER_HOME);
+		expect(otherTierPath("/app/debug", RAPPER)).toBe(TIER_HOME);
 	});
 
 	it("prefers the longest matching prefix, not declaration order", () => {
@@ -80,7 +80,7 @@ describe("currentRepo", () => {
 		// THE BUG: the GH link was a fixed {repo} prop, so /offline showed
 		// ReTreever_who_what.
 		expect(currentRepo("/who", RETREEVER)).toBe("ReTreever_who_what");
-		expect(currentRepo("/offline", RETREEVER)).toBe("getCache_OfflineMap");
+		expect(currentRepo("/app/offline", RETREEVER)).toBe("getCache_OfflineMap");
 	});
 
 	it("is undefined where no child backs the route", () => {
@@ -99,7 +99,7 @@ describe("currentRepo", () => {
  */
 describe("otherTierPath — the other tier's landing route", () => {
 	it("uses the caller's landing route instead of '/' when nothing matches", () => {
-		expect(otherTierPath("/map", RAPPER, "/who")).toBe("/who");
+		expect(otherTierPath("/app/map", RAPPER, "/who")).toBe("/who");
 		expect(otherTierPath("/legal", RETREEVER, "/somewhere")).toBe("/somewhere");
 	});
 

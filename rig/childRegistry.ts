@@ -32,6 +32,11 @@ export type ChildRecord = {
 	 *  every path-driven answer: whatever it serves came from the child it
 	 *  mounted, and that child has its own row. Hence no `paths` either. */
 	tier?: boolean;
+	/**
+	 * Served under APP_PREFIX by every parent (`/app/offline`). `paths` still
+	 * spell the child's own routes/ folder, which is flat — mountPath() joins them.
+	 */
+	app?: true;
 	/** Where this child STARTS when mounted alone. Declared, never inferred —
 	 *  which view an app opens on is a product decision, not path order.
 	 *  Read by the child's "/" reroute hook, the nav logo link, and the url
@@ -56,6 +61,9 @@ export type NavView = {
 	/** The button text. Lowercase, terse: this is dev chrome, not product UI. */
 	label: string;
 };
+
+/** Where every tier mounts the Get Cache app — one prefix, every environment. */
+export const APP_PREFIX = "/app";
 
 export const CHILDREN: ChildRecord[] = [
 	{
@@ -95,6 +103,7 @@ export const CHILDREN: ChildRecord[] = [
 	},
 	{
 		repo: "getCache_OfflineMap",
+		app: true,
 		org: "Ground-Truth-Data",
 		name: "offline map",
 		owner: "Get Cache",
@@ -107,6 +116,7 @@ export const CHILDREN: ChildRecord[] = [
 	},
 	{
 		repo: "getCache_OnlineMap",
+		app: true,
 		org: "Ground-Truth-Data",
 		name: "online map",
 		owner: "Get Cache",
@@ -135,6 +145,11 @@ export const CHILDREN: ChildRecord[] = [
  * /offline. Undefined for a path no child claims — a parent's own page.
  */
 export function childForPath(pathname: string): ChildRecord | undefined {
+	// `paths` mirror the child's own routes/ folder, which is flat; both tiers
+	// MOUNT the Get Cache children under /app. Strip the mount, keep the truth.
+	if (pathname === APP_PREFIX || pathname.startsWith(APP_PREFIX + "/")) {
+		pathname = pathname.slice(APP_PREFIX.length) || "/";
+	}
 	let best: ChildRecord | undefined;
 	let bestLen = -1;
 	for (const c of CHILDREN) {
@@ -149,6 +164,12 @@ export function childForPath(pathname: string): ChildRecord | undefined {
 		}
 	}
 	return best;
+}
+
+/** Where a parent actually serves one of a child's paths: `/app/offline` for a Get Cache child, `/who` for a ReTreever one. */
+export function mountPath(child: ChildRecord, path = child.defaultPath): string {
+	if (!child.app) return path;
+	return path === "/" ? APP_PREFIX : APP_PREFIX + path;
 }
 
 /** A child by repo name, for the cases that genuinely know which one. */
