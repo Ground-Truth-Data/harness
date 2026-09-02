@@ -113,20 +113,12 @@
 	--rt-shadow-gold-press:
 		0 1px 0 var(--rt-gold-bevel), 0 2px 6px rgba(232, 185, 35, 0.15),
 		inset 0 1px 0 rgba(255, 255, 255, 0.15);
-	/* Zero-offset shadow = a halo, not a cast shadow. currentColor resolves per
-	   element, so gold glows gold and rust glows rust off one value; em keeps the
-	   halo proportional to the type it lights. Headings and emphasis only —
-	   a halo softens the letterform, which body copy can't afford.
-
-	   THREE STOPS, NOT ONE. A single blur reads as a smudge and, measured at
-	   35%/0.5em, was invisible on this artwork. Light falls off steeply: the
-	   tight core is what makes the letter look emissive, the wide stop is the
-	   air around it, and it takes both to be seen as a glow rather than a
-	   blurred copy of the text. */
-	--rt-glow-text:
-		0 0 0.12em color-mix(in srgb, currentColor 85%, transparent),
-		0 0 0.5em color-mix(in srgb, currentColor 45%, transparent),
-		0 0 1.2em color-mix(in srgb, currentColor 25%, transparent);
+	/* --rt-shadow-gold's bevel, applied to type. Hard and offset, never blurred:
+	   a zero-offset halo softens the outline in every direction at once, which
+	   the eye reads as a focus problem rather than as light — tried and rejected.
+	   em so it tracks the type size. DISPLAY SIZES ONLY: at body size the offset
+	   closes up the counters and the word just looks dirty. */
+	--rt-bevel-text: 0 0.07em 0 var(--rt-gold-bevel);
 
 	--rt-shadow-modal: 0 22px 50px rgba(0, 0, 0, 0.7);
 	--rt-shadow-panel: -12px 0 30px rgba(0, 0, 0, 0.55);

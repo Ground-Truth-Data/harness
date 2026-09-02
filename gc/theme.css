@@ -291,10 +291,12 @@
 	/* Get Cache prose — .gc-shell wraps every public Get Cache page.
 	   Emphasis is gold, an inline link is rust: two different jobs, so they
 	   never share one accent. A component must not re-colour <strong> or <a>. */
-	/* .rt-text-title as well as h1: the footer tagline is display type on every
-	   page but only the LANDING one, where it is the page's heading, is an h1. */
-	.gc-shell :where(h1, .rt-text-title, strong, b) {
-		text-shadow: var(--rt-glow-text);
+	/* Display type only. .rt-text-title as well as h1: the footer tagline is
+	   display type on every page but only the LANDING one, where it is the
+	   page's heading, is an h1. Emphasis inside body copy gets colour and
+	   nothing else — at that size any edge treatment reads as dirt. */
+	.gc-shell :where(h1, .rt-text-title) {
+		text-shadow: var(--rt-bevel-text);
 	}
 
 	.gc-shell :where(strong, b) {
