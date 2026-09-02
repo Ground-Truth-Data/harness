@@ -167,7 +167,7 @@ export function childForPath(pathname: string): ChildRecord | undefined {
 }
 
 /** Where a parent actually serves one of a child's paths: `/app/offline` for a Get Cache child, `/who` for a ReTreever one. */
-export function mountPath(child: ChildRecord, path = child.defaultPath): string {
+export function mountPath(child: ChildRecord, path: string = child.defaultPath ?? "/"): string {
 	if (!child.app) return path;
 	return path === "/" ? APP_PREFIX : APP_PREFIX + path;
 }
