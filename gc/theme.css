@@ -562,9 +562,17 @@
 	--wrapper-drop: 0px;
 }
 
-/* Mobile Preview Frame — always shows app in phone-sized container */
+/* THE PHONE FILLS ITS PARENT, NOT THE WINDOW. `absolute` is the default
+   because a page with a nav on top is the normal case: the phone gets the box
+   left over, the nav is never underneath it, and no page writes a rule to
+   arrange that. A page that IS nothing but the phone wraps it in
+   .phone-viewport below, which makes that box the window again.
+
+   This was `fixed` until three separate pages had each overridden it back to
+   `absolute` with the same reasoning. The rare case was the default; it is not
+   any more. Wrap, never re-declare position — a fourth override is the bug. */
 .mobile-preview-backdrop {
-	position: fixed;
+	position: absolute;
 	inset: 0;
 	/* Landscape photo behind the phone + hand. `cover` fills the viewport
 	   without distorting the image's aspect ratio (it crops, never stretches). */
@@ -600,6 +608,15 @@
 	   doesn't work: cq units resolve
 	   against the NEAREST size container, and the wrapper's chain ends here. */
 	container-type: size;
+}
+
+/* THE WHOLE-WINDOW CASE. A phone-only page (no nav, no footer — the Capacitor
+   app, rapper's (gc) routes) wraps the rig in this, and the backdrop's
+   inset:0 then resolves against the viewport. `fixed` rather than a 100dvh
+   block so the mobile URL bar sliding in cannot resize the stage mid-scroll. */
+.phone-viewport {
+	position: fixed;
+	inset: 0;
 }
 
 /* --fit must be a TYPED custom property, not a plain one — see the long note

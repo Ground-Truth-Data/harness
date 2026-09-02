@@ -12,6 +12,7 @@
 import "$parent/src/app.unique.css";
 import { page } from "$app/state";
 import SharedNav from "./nav/SharedNav.svelte";
+import EphemeralTray from "./dev/EphemeralTray.svelte";
 import type { TierRoute } from "./nav/tierRoutes";
 import ghIconUrl from "./assets/github-logo.png";
 import type { Snippet } from "svelte";
@@ -79,6 +80,15 @@ const TIER_ROUTES = readRoutes(ENV.VITE_TIER_ROUTES);
 	/>
 {/if}
 
+<!-- THE DEV TRAY, ON EVERY PAGE. rapper has no routes/+layout of its own, so
+     this layout IS the one place every child page passes through — the same
+     argument the nav above already makes. One mount replaced a per-page mount
+     in each child, which was a list to forget in two directions: a page with
+     no tray, and the card shipping into production because an unconditional
+     mount is a live reference the bundler must keep. Renders nothing outside
+     `vite dev`. -->
+<EphemeralTray />
+
 <main>
 	{@render children?.()}
 </main>
@@ -98,9 +108,5 @@ const TIER_ROUTES = readRoutes(ENV.VITE_TIER_ROUTES);
 		min-height: 0;
 		position: relative;
 		overflow: hidden;
-	}
-	/* theme.css fixes the phone backdrop to the viewport; under a nav it fills <main>. */
-	main :global(.mobile-preview-backdrop) {
-		position: absolute;
 	}
 </style>

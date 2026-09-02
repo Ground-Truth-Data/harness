@@ -7,4 +7,4 @@ configureTilesFromEnv();
 let { children } = $props();
 </script>
 
-<PhoneRig>{@render children()}</PhoneRig>
+<PhoneRig viewport>{@render children()}</PhoneRig>
