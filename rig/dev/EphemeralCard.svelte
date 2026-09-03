@@ -41,10 +41,13 @@ let {
 	title = "",
 	/** The content element, for components that portal their DOM in. */
 	host = $bindable<HTMLElement | undefined>(undefined),
+	/** The fold button was pressed. The tray owns what "folded" looks like. */
+	onfold,
 	children,
 }: {
 	title?: string;
 	host?: HTMLElement;
+	onfold?: () => void;
 	children?: Snippet;
 } = $props();
 
@@ -85,20 +88,17 @@ const tHref = $derived(
 		? (tOtherOrigin ?? T_OTHER_ORIGIN) + (tOtherPath ?? TIER_HOME) + page.url.search
 		: undefined,
 );
-let collapsed = $state(false);
 
 </script>
 
 {#if dev}
-	<section class="dev-card ephemeral" class:collapsed data-ephemeral>
+	<section class="dev-card ephemeral" data-ephemeral>
 		<header class="bar">
-			<button type="button" class="fold" onclick={() => (collapsed = !collapsed)} aria-expanded={!collapsed}>
-				{collapsed ? "▸" : "▾"}
-			</button>
+			<button type="button" class="fold" onclick={onfold} aria-label="Hide dev tray">▾</button>
 			<span class="tag">dev</span>
 			{#if title}<span class="title">{title}</span>{/if}
 		</header>
-		<div class="content" bind:this={host} hidden={collapsed}>
+		<div class="content" bind:this={host}>
 			{#if T_TIER}
 				<div class="pill"><ParentPill leftLabel={tLeft} rightLabel={tRight} current={T_TIER} href={tHref} /></div>
 			{/if}

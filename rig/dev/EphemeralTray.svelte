@@ -27,14 +27,47 @@
  * it never mounts a second one. A page that wants its own side rails mounts an
  * EphemeralDock, which stays per-page because `bind:host` is per-page wiring.
  */
+import { onMount } from "svelte";
 import { page } from "$app/state";
 import EphemeralCard from "./EphemeralCard.svelte";
 import EphemeralDock from "./EphemeralDock.svelte";
 import { trayHost } from "./trayHost.svelte";
+import arrowGold from "../assets/arrowIconGold.webp";
 
 let { title }: { title?: string } = $props();
 
 const dev = import.meta.env.DEV;
+
+/**
+ * FOLDED BY DEFAULT — the tray is dev chrome over the page under test, so it
+ * starts out of the way and comes back from a small tab in the corner.
+ * `?ephem=1` / `?ephem=0` force the starting state for one load; otherwise
+ * the last fold is remembered per tab (sessionStorage, so a fresh tab starts
+ * clean). Storage is read after mount: the tray renders on the server too,
+ * and the param is the only input both sides can agree on.
+ */
+const FOLD_KEY = "rt-ephem-collapsed";
+const urlEphem = page.url.searchParams.get("ephem");
+let collapsed = $state(urlEphem !== "1");
+let tab = $state<HTMLElement>();
+
+onMount(() => {
+	if (urlEphem === null) collapsed = sessionStorage.getItem(FOLD_KEY) !== "0";
+});
+
+function toggleFold() {
+	collapsed = !collapsed;
+	sessionStorage.setItem(FOLD_KEY, collapsed ? "1" : "0");
+}
+
+// Same escape SideCard makes: a transformed ancestor (the phone rig) would
+// otherwise become the containing block and pin the tab to the phone's corner.
+$effect(() => {
+	const el = tab;
+	if (!el) return;
+	document.body.appendChild(el);
+	return () => el.remove();
+});
 
 /**
  * The page name is READ FROM THE URL, not passed in. Passing it was the last
@@ -58,7 +91,36 @@ $effect(() => {
 </script>
 
 {#if dev}
-	<EphemeralDock side="left">
-		<EphemeralCard title={title ?? derived} bind:host />
-	</EphemeralDock>
+	{#if collapsed}
+		<button type="button" class="ephem-tab" bind:this={tab} onclick={toggleFold} aria-label="Show dev tray">
+			<img src={arrowGold} alt="" />
+		</button>
+	{:else}
+		<EphemeralDock side="left">
+			<EphemeralCard title={title ?? derived} bind:host onfold={toggleFold} />
+		</EphemeralDock>
+	{/if}
 {/if}
+
+<style>
+.ephem-tab {
+	all: unset;
+	position: fixed;
+	bottom: 14px;
+	left: 14px;
+	z-index: 8900;
+	cursor: pointer;
+	width: 36px;
+	opacity: 0.6;
+	transition: opacity 0.15s;
+}
+.ephem-tab:hover { opacity: 1; }
+/* The asset points left; flipped, it points into the page — "bring it out". */
+.ephem-tab img {
+	display: block;
+	width: 100%;
+	height: auto;
+	transform: scaleX(-1);
+	filter: drop-shadow(0 1px 2px rgba(0, 0, 0, 0.6));
+}
+</style>

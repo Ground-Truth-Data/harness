@@ -24,6 +24,9 @@ export type ChildRecord = {
 	/** Logo filename inside sharedAssets/ — a NAME, not a path, so the importer
 	 *  resolves it against whichever parent is mounting. */
 	logo: string;
+	/** Tab-icon filename, resolved like `logo`. Only when the product has an
+	 *  app icon distinct from its wordmark; absent means the logo is the icon. */
+	icon?: string;
 	/** Every pathname this child serves, longest-prefix matched. Mirrors the
 	 *  child's routes/ folder — childRegistry.test.ts checks the two agree. */
 	paths: string[];
@@ -108,6 +111,7 @@ export const CHILDREN: ChildRecord[] = [
 		name: "offline map",
 		owner: "Get Cache",
 		logo: "GC_fly_logo_transparent.webp",
+		icon: "favicon.png",
 		paths: ["/", "/offline"],
 		defaultPath: "/offline",
 		soloPaths: ["/"],
@@ -121,6 +125,7 @@ export const CHILDREN: ChildRecord[] = [
 		name: "online map",
 		owner: "Get Cache",
 		logo: "GC_fly_logo_transparent.webp",
+		icon: "favicon.png",
 		paths: ["/", "/map", "/demo"],
 		defaultPath: "/map",
 		soloPaths: ["/", "/demo"],
@@ -133,10 +138,16 @@ export const CHILDREN: ChildRecord[] = [
 		name: "where",
 		owner: "ReTreever",
 		logo: "ReTreever_logo_sm.webp",
-		paths: ["/", "/where"],
+		// /where/orgs and /where/projects come from ONE dynamic route
+		// ([view=whereView]) — childRegistry.test.ts allows them by name.
+		paths: ["/", "/where", "/where/orgs", "/where/projects"],
 		defaultPath: "/where",
 		soloPaths: ["/"],
-		views: [{ href: "/where", label: "where" }],
+		views: [
+			{ href: "/where", label: "where" },
+			{ href: "/where/orgs", label: "orgs" },
+			{ href: "/where/projects", label: "projects" },
+		],
 	},
 ];
 

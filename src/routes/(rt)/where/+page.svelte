@@ -1,5 +1,1 @@
-<script lang="ts">
-import Page from "$parent/siblings/ReTreever_where/routes/where/+page.svelte";
-</script>
-
-<Page />
+<!-- Empty on purpose: the layout renders the map; this file only makes /where a route. -->

@@ -22,8 +22,9 @@ type Child = { name: string; owner: string; repo: string; views?: { href: string
 let {
 	child,
 	logo,
+	icon,
 	children,
-}: { child: Child; logo: string; children?: Snippet } = $props();
+}: { child: Child; logo: string; icon?: string; children?: Snippet } = $props();
 
 const dev = import.meta.env.DEV;
 
@@ -51,7 +52,9 @@ const TIER_ROUTES = readRoutes(ENV.VITE_TIER_ROUTES);
 
 <svelte:head>
 	<title>{`${child.owner} — ${child.name}`}</title>
-	<link rel="icon" href={logo} />
+	<!-- The tab icon is the PRODUCT's app icon when it has one; the nav logo
+	     (a wide transparent wordmark) reads as a smudge at 16px. -->
+	<link rel="icon" href={icon ?? logo} />
 	{#if dev}
 		<!-- The nav's height, declared only in dev so production reserves nothing. 64px bar + 3px gold rule. -->
 		<style>
