@@ -422,9 +422,11 @@
 :is(button, a, [role="button"], [role="tab"])[aria-pressed="true"],
 :is(button, a, [role="button"], [role="tab"])[aria-pressed="true"]:hover,
 :is(button, a, [role="button"], [role="tab"])[aria-pressed="true"]:focus,
-:is(button, a, [role="button"], [role="tab"])[aria-selected="true"],
-:is(button, a, [role="button"], [role="tab"])[aria-selected="true"]:hover,
-:is(button, a, [role="button"], [role="tab"])[aria-selected="true"]:focus,
+/* Not [role="option"]: a chosen row in a listbox sits on the list's own
+   dark ground, never on gold, and gold ink there is black on black. */
+:is(button, a, [role="button"], [role="tab"]):not([role="option"])[aria-selected="true"],
+:is(button, a, [role="button"], [role="tab"]):not([role="option"])[aria-selected="true"]:hover,
+:is(button, a, [role="button"], [role="tab"]):not([role="option"])[aria-selected="true"]:focus,
 :is(button, a, [role="button"])[data-on-gold],
 :is(button, a, [role="button"])[data-on-gold]:hover,
 :is(button, a, [role="button"])[data-on-gold]:focus,
