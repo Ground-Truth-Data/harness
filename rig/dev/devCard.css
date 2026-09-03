@@ -56,12 +56,14 @@
    measures the phone and publishes --dock-width-left/right; the lane is
    left+right both set, the card is capped at --dock-max and margin-inline
    auto centres it in the lane. */
+/* The lane geometry is $gc/theme.css `.gc-lane` — one definition, shared with
+   the public side panels. These are aliases so a dev dock and a wiki card sit
+   in exactly the same box; changing one changes both, which is the point. */
 .dev-lane {
 	position: fixed;
 	--band: var(--dock-width, min(28vw, 40rem));
 	--lane-far: calc(100vw - 12px - var(--band));
 	width: min(var(--band), var(--dock-max, 32.5rem));
-	/*min-width: min(30rem, var(--band));*/
 	margin-inline: auto;
 	box-sizing: border-box;
 }

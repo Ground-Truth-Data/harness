@@ -3,19 +3,22 @@ import "./devCard.css";
 /**
  * EPHEMERAL DOCK — a dev-only side column for page-specific instruments.
  *
- * The EphemeralCard is the TRAY every page shares (tier pill, debug toggle).
- * A page's own panels — the offline map's memory/blobs/config rails — are a
- * different thing: they belong to one page, and they are big. They go in a
- * dock: a fixed column hugging one window edge, outside any phone, with no
- * chrome of its own. Empty dock, no dock: `:empty` hides it, so a page that
- * has not toggled its panels on shows nothing.
+ * The TRAY is what every page shares (tier pill, debug toggle). A page's own
+ * panels — the offline map's memory/blobs/config rails — belong to one page
+ * and are big, so they go in a dock instead. Empty dock, no dock: `:empty`
+ * hides it, so a page that has not toggled its panels on shows nothing.
  *
- * Same rules as the card: `import.meta.env.DEV` only, moved to <body> on
- * mount, names no tier, `bind:host` for components that portal their DOM in.
+ * THE BOX IS <SideCard>, not this file. Where a panel sits beside the phone
+ * is one question with one answer — span the viewport edge to the frame, even
+ * margins, measured from the frame's real box — and that answer used to live
+ * here, gated behind `{#if dev}`. A public page needing the same geometry
+ * therefore had to rewrite it, which is exactly what the wiki pages did and
+ * got wrong. What stays here is what is genuinely dev-only: the gate, and the
+ * `bind:host` portal a page uses to move its own nodes in.
  */
 import { onMount } from "svelte";
 import type { Snippet } from "svelte";
-import { publishDockWidths } from "./dockWidths";
+import SideCard from "$gc/SideCard.svelte";
 
 let {
 	side = "left",
@@ -32,37 +35,33 @@ let {
 } = $props();
 
 const dev = import.meta.env.DEV;
+
+// Moved to <body> so the dock escapes any transformed ancestor — a phone rig
+// is drawn with a transform, which would otherwise become its containing block.
 onMount(() => {
 	if (!host) return;
 	document.body.appendChild(host);
-	const frame = document.querySelector<HTMLElement>(".mobile-preview-frame");
-	const stop = frame ? publishDockWidths(frame) : undefined;
-	return () => {
-		stop?.();
-		host?.remove();
-	};
+	return () => host?.remove();
 });
 </script>
 
 {#if dev}
-	<aside bind:this={host} class="dev-lane dev-lane--{side} dock" style="top:calc(var(--host-chrome, 0px) + 12px + {top})" data-ephemeral-dock>
+	<SideCard {side} {top} bind:el={host} class="dock" data-ephemeral-dock>
 		{@render children?.()}
-	</aside>
+	</SideCard>
 {/if}
 
 <style>
-.dock {
+/* Only what a DOCK adds to a side panel: the instrument-rail look, and the
+   rule that an empty one disappears. The box is SideCard's. */
+:global(.dock) {
 	z-index: 8900;
-	display: flex;
-	flex-direction: column;
-	gap: 10px;
-	overflow: auto;
 	color: #d8d4c8;
 	font: 12px/1.4 ui-monospace, SFMono-Regular, Menlo, monospace;
 }
-.dock:empty { display: none; }
-/* Same rule as the tray: the dock owns placement, the item keeps its look. */
-.dock > :global(*) {
+:global(.dock:empty) { display: none; }
+/* The dock owns placement, the item keeps its look. */
+:global(.dock) > :global(*) {
 	position: static;
 	flex: 0 0 auto;
 	width: auto;

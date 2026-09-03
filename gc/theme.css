@@ -821,3 +821,24 @@ html.native .measure-pop {
 	backdrop-filter: blur(24px) saturate(180%) !important;
 	-webkit-backdrop-filter: blur(24px) saturate(180%) !important;
 }
+
+/* ── THE GUTTER BESIDE THE PHONE ────────────────────────────────────────────
+   The one definition of "a panel docked next to the phone rig": span the
+   viewport edge to the frame, even margins, width measured from the frame's
+   real on-screen box (publishDockWidths). Hand-rolling this is what produces a
+   panel with a dead gap beside it.
+
+   It lives HERE, not in devCard.css, because it is no longer dev-only — the
+   public wiki pages dock their copy in the same gutter. devCard.css's
+   .dev-lane aliases these so the dev docks and the public panels cannot
+   drift apart. */
+.gc-lane {
+	position: fixed;
+	--band: var(--dock-width, min(28vw, 40rem));
+	--lane-far: calc(100vw - 12px - var(--band));
+	width: min(var(--band), var(--dock-max, 32.5rem));
+	margin-inline: auto;
+	box-sizing: border-box;
+}
+.gc-lane--left { --dock-width: var(--dock-width-left); left: 12px; right: var(--lane-far); }
+.gc-lane--right { --dock-width: var(--dock-width-right); right: 12px; left: var(--lane-far); }
