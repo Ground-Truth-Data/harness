@@ -78,6 +78,17 @@ scaffolds, prints the one command left to run, and exits — same if you pass
 where a prompt has nobody to answer it. `npm create` is the verb that may ask;
 it is the same one behind `npm create vite` and `npm create svelte`.
 
+**`npm error code ENOVERSIONS` — "No versions available"?** Your npm has a
+release-age cooldown set (`min-release-age` in `~/.npmrc`) and every release of
+this package is younger than it. `npm create` ignores `min-release-age-exclude`
+(npm 11.18 and 12.0, checked 3 Sep 2026 — the exclude only covers install,
+update, outdated and query), so lift the guard for this one command. The flag
+goes BEFORE the package name; after the `--` it reaches the installer, not npm:
+
+```sh
+npm create --min-release-age=0 @retreever/rapper@latest my-map -- --offline
+```
+
 ## What you end up with
 
 **One rapper, one component.** A second component means a second install, in a
