@@ -51,7 +51,9 @@ let {
 } = $props();
 
 // Presence, not a breakpoint. The frame is what makes a gutter exist.
-let beside = $state(false);
+// `undefined` until it has been looked for — painting a guess first is the
+// flash of a card in the wrong place that every reload used to show.
+let beside = $state<boolean | undefined>(undefined);
 $effect(() => watchPhoneFrame((present) => (beside = present)));
 
 onMount(() => {
@@ -97,14 +99,23 @@ onMount(() => {
 	transform: translateY(calc(-50% + var(--nudge, 0px)));
 }
 
-/* No phone: centred in the VIEWPORT. Translated from its own centre so it
-   cannot leave the screen at any width. */
+/* No phone: centred in the VIEWPORT, gold-edged. Sized with a viewport gutter
+   rather than a percentage, so there is padding off the edge at every width —
+   88vw of a narrow phone is still a card touching both sides. */
 .side-card--centred {
 	position: fixed;
 	left: 50%;
 	top: 50%;
 	transform: translate(-50%, -50%);
-	width: min(88vw, 480px);
-	max-height: 82dvh;
+	width: min(480px, calc(100vw - 2 * var(--card-gutter, 20px)));
+	max-height: calc(100dvh - 2 * var(--card-gutter, 20px));
+	border-color: var(--rt-yellow, #e8b923);
+}
+
+/* Not yet placed: it exists and has measured, but nothing is painted until we
+   know WHERE. Rendering it centred first and moving it is a visible jump. */
+.side-card--unplaced {
+	position: fixed;
+	visibility: hidden;
 }
 </style>

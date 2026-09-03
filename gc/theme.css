@@ -94,6 +94,9 @@
 	   Sage = nature/environment (maps, land, ecological indicators). */
 	--palette-gold: var(--rt-yellow);
 	--palette-terracotta: #b36940;
+	/* Links are rust, not gold: a link is a way out, not the thing to do. */
+	--palette-rust: #c97a4a;
+	--color-link: var(--palette-rust);
 	--palette-terracotta-hint: #d18a5e;
 	--palette-sage: #838963;
 
@@ -844,3 +847,10 @@ html.native .measure-pop {
 }
 .gc-lane--left { --dock-width: var(--dock-width-left); left: 12px; right: var(--lane-far); }
 .gc-lane--right { --dock-width: var(--dock-width-right); right: 12px; left: var(--lane-far); }
+
+/* LINKS ARE RUST BY DEFAULT. Gold is the commit colour — the button you came
+   to press. A link is a way out, so it reads quieter. A component that means
+   "do this" sets its own colour and overrides. */
+a {
+	color: var(--color-link);
+}
