@@ -1,23 +1,31 @@
 <script lang="ts">
 /**
- * SIDE CARD — the one card that sits beside the phone.
+ * SIDE CARD — the card that sits in the gutter beside the phone, and becomes
+ * a centred card over the app when there is no phone to sit beside.
  *
- * The phone rig leaves a gutter each side at desktop widths, and there is
- * exactly one correct way to fill it: span viewport-edge to phone with even
- * margins, measured from the frame's real on-screen box. Hand-rolling that
- * leaves a dead gap, every time.
+ * ONE COMPONENT, BOTH STATES. The desktop/mobile split is not the caller's
+ * problem: a caller has a card's worth of content and this decides where it
+ * goes. Splitting it was the bug — every caller then re-derived "is there a
+ * phone" from a media query, and a media query is the wrong question (debug
+ * routes are wide with no frame, and the frame mounts after the page does).
  *
- * It is not a dev thing. <EphemeralCard> and <EphemeralDock> are this card
- * with a dev gate and a portal; the wiki pages are this card with copy in it.
- * Contents differ, box never does — fix the box here and every caller moves.
+ * The mobile state is centred in the viewport, like every other Get Cache
+ * popover. Nothing slides off an edge.
  *
- * BELOW THE PHONE-FRAME BREAKPOINT there is no gutter to sit beside, so a
- * caller with something to say there uses the mobile card instead
- * (WaitingPopover's). This component only ever draws the desktop side card.
+ * IT ESCAPES TO <body> ON MOUNT, and must. The phone rig is drawn with a
+ * transform, and a transformed ancestor becomes the containing block for
+ * `position: fixed` — so a card rendered inside the rig measures its `left`
+ * from the PHONE's edge and lands on top of it. This is not an optional extra
+ * a caller could bolt on: a side card that has not escaped is a card over the
+ * phone. It lived in <EphemeralDock> behind a dev gate, which is why every
+ * public attempt at this landed in the wrong place.
+ *
+ * <EphemeralCard> and <EphemeralDock> are this card with a dev gate and a
+ * content portal. Fix the box here and all three move.
  */
 import type { Snippet } from "svelte";
 import { onMount } from "svelte";
-import { publishDockWidths } from "$rig/dev/dockWidths";
+import { watchPhoneFrame } from "./phoneFrame.svelte";
 import "$rig/dev/devCard.css";
 
 let {
@@ -42,23 +50,27 @@ let {
 	[key: string]: unknown;
 } = $props();
 
-// The frame is drawn by a transform, so its on-screen edge can only be
-// measured. Without this the lane falls back to a fixed band and leaves a gap.
+// Presence, not a breakpoint. The frame is what makes a gutter exist.
+let beside = $state(false);
+$effect(() => watchPhoneFrame((present) => (beside = present)));
+
 onMount(() => {
-	const frame = document.querySelector<HTMLElement>(".mobile-preview-frame");
-	return frame ? publishDockWidths(frame) : undefined;
+	if (!el) return;
+	document.body.appendChild(el);
+	return () => el?.remove();
 });
 </script>
 
 <!-- `class` is taken out of `rest` above. Left in, a caller's `class="dock"`
-     replaces this attribute wholesale and the card loses .gc-lane — it drops
-     into normal flow, full width, above the nav, then jumps on mount. -->
+     replaces this attribute wholesale and the card loses its shell. -->
 <aside
 	bind:this={el}
-	class="dev-card side-card gc-lane {className}"
-	class:gc-lane--left={side === "left"}
-	class:gc-lane--right={side === "right"}
-	style="top:calc(var(--host-chrome, 0px) + 12px + {top})"
+	class="dev-card side-card {className}"
+	class:gc-lane={beside}
+	class:gc-lane--left={beside && side === "left"}
+	class:gc-lane--right={beside && side === "right"}
+	class:side-card--centred={!beside}
+	style="--nudge:{top}"
 	{...rest}
 >
 	{#if title}<div class="dev-card__head"><span class="dev-card__title">{title}</span></div>{/if}
@@ -66,8 +78,8 @@ onMount(() => {
 </aside>
 
 <style>
-/* .dev-card owns the box, .gc-lane owns where it sits. Only the vertical
-   extent is left to decide. */
+/* .dev-card owns the look, .gc-lane owns the gutter geometry. Only the
+   vertical extent is left to decide. */
 .side-card {
 	display: flex;
 	flex-direction: column;
@@ -75,5 +87,24 @@ onMount(() => {
 	overflow-y: auto;
 	max-height: calc(100dvh - var(--host-chrome, 0px) - 4rem);
 	z-index: 40;
+}
+
+/* Beside the phone: hovering in the middle of the space under the host
+   chrome, equal air above and below. Translated from its own centre so the
+   card's height never enters into it. */
+.side-card.gc-lane {
+	top: calc(50% + var(--host-chrome, 0px) / 2);
+	transform: translateY(calc(-50% + var(--nudge, 0px)));
+}
+
+/* No phone: centred in the VIEWPORT. Translated from its own centre so it
+   cannot leave the screen at any width. */
+.side-card--centred {
+	position: fixed;
+	left: 50%;
+	top: 50%;
+	transform: translate(-50%, -50%);
+	width: min(88vw, 480px);
+	max-height: 82dvh;
 }
 </style>

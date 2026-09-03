@@ -25,7 +25,7 @@
 		Menlo,
 		monospace;
 	color: var(--text);
-	background: rgb(0 0 0 / 0.72);
+	background: rgb(0 0 0 / 0.86);
 	backdrop-filter: blur(6px);
 	border: 1px solid var(--border);
 	border-radius: 14px;

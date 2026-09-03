@@ -13,10 +13,11 @@ import "./devCard.css";
  * margins, measured from the frame's real box — and that answer used to live
  * here, gated behind `{#if dev}`. A public page needing the same geometry
  * therefore had to rewrite it, which is exactly what the wiki pages did and
- * got wrong. What stays here is what is genuinely dev-only: the gate, and the
- * `bind:host` portal a page uses to move its own nodes in.
+ * got wrong. Escaping to <body> moved there too — a card that has not escaped
+ * sits on top of the phone, so it is part of the box, not of the dev gate.
+ * What stays here is genuinely dev-only: the gate, and the `bind:host` handle
+ * a page uses to move its own nodes in.
  */
-import { onMount } from "svelte";
 import type { Snippet } from "svelte";
 import SideCard from "$gc/SideCard.svelte";
 
@@ -35,14 +36,6 @@ let {
 } = $props();
 
 const dev = import.meta.env.DEV;
-
-// Moved to <body> so the dock escapes any transformed ancestor — a phone rig
-// is drawn with a transform, which would otherwise become its containing block.
-onMount(() => {
-	if (!host) return;
-	document.body.appendChild(host);
-	return () => host?.remove();
-});
 </script>
 
 {#if dev}
