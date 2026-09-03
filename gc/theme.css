@@ -850,7 +850,12 @@ html.native .measure-pop {
 
 /* LINKS ARE RUST BY DEFAULT. Gold is the commit colour — the button you came
    to press. A link is a way out, so it reads quieter. A component that means
-   "do this" sets its own colour and overrides. */
-a {
-	color: var(--color-link);
+   "do this" sets its own colour and overrides.
+   Inside the base layer on purpose: an unlayered rule outranks EVERY layered
+   one, so a bare `a {}` here beat Tailwind's `text-white` on the ReTreever nav
+   and turned it rust. In `base`, any utility or component colour wins. */
+@layer base {
+	a {
+		color: var(--color-link);
+	}
 }
