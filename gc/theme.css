@@ -388,6 +388,11 @@
 .rt-gold-btn * {
     color: var(--rt-gold-ink);
 }
+@media (hover: hover) and (pointer: fine) {
+    .rt-gold-btn:hover:not(:disabled):not(.disabled):not(:active):not(.pressed) {
+        box-shadow: var(--rt-shadow-gold-hover);
+    }
+}
 /* :active rather than a JS-held class, so a plain <button> gets the press
    without any state wired up on the calling side. `.pressed` is honoured too,
    for callers that track it themselves (GoldButton does, for pointer events). */

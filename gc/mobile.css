@@ -113,6 +113,12 @@
 	--rt-shadow-gold-press:
 		0 1px 0 var(--rt-gold-bevel), 0 2px 6px rgba(232, 185, 35, 0.15),
 		inset 0 1px 0 rgba(255, 255, 255, 0.15);
+	/* Pointer hover on a solid gold button: the bevel already says "pressable",
+	   so hover adds a halo in the same hue instead of changing the fill. */
+	--rt-shadow-gold-hover:
+		0 2px 0 var(--rt-gold-bevel), 0 6px 14px rgba(232, 185, 35, 0.25),
+		0 0 22px 4px rgba(243, 198, 30, 0.5),
+		inset 0 1px 0 rgba(255, 255, 255, 0.45);
 	/* --rt-shadow-gold's bevel, applied to type. Hard and offset, never blurred:
 	   a zero-offset halo softens the outline in every direction at once, which
 	   the eye reads as a focus problem rather than as light — tried and rejected.
@@ -474,6 +480,56 @@ hr {
 	line-height: 1;
 	margin: 0;
 	text-align: center;
+}
+
+/* ── Pointer hover — hollow buttons ─────────────────────────────────────
+   One hover language for every outline / bare button in Get Cache: the fill
+   tints toward the button's own colour and a soft ring of it appears outside
+   the edge. currentColor makes it self-tinting — white pill, gold clicker,
+   rust link all get their own hue from one rule. background-COLOR (not
+   background) so a gradient-filled button is untouched; outline (not
+   box-shadow) so a bevel is untouched. Solid gold / rust buttons glow via
+   their own rules instead. Hover-capable pointers only: a phone must never
+   hold a hover after a tap.
+
+   The :not() list is every button that already carries its own hover in a
+   scoped stylesheet — keep it in sync when adding one. */
+@media (hover: hover) and (pointer: fine) {
+	body.mobile-app
+		:is(button, [role="button"], [role="tab"]):not(
+			:disabled,
+			[aria-disabled="true"],
+			.rt-gold-btn,
+			.cache-popover-ok,
+			.set-size-cta,
+			.cache-drawer-handle,
+			.rt-btn--neutral,
+			.rt-btn--ghost,
+			.rt-btn--danger,
+			.rt-card,
+			.combo-option,
+			.rt-group,
+			.rt-group__zone,
+			.rt-ism__tile,
+			.rt-ism__howto,
+			.rt-ism__cancel,
+			.note-glyph,
+			.plaque,
+			.plaque-trigger,
+			.placard,
+			.rt-popover-opt,
+			.rt-row,
+			.rt-row__cell,
+			.na-toggle,
+			.cloud-save,
+			.rw,
+			.fault-card,
+			.fault-card--usual
+		):hover {
+		background-color: color-mix(in srgb, currentColor 12%, transparent);
+		outline: 3px solid color-mix(in srgb, currentColor 9%, transparent);
+		outline-offset: 0;
+	}
 }
 
 /* ONE cursor only — a two-variant (white/gold) version caused GPU texture swap flicker during screen recording. body.mobile-app / body.shovel-cursor opt in; !important overrides every other cursor: rule in the codebase. */
