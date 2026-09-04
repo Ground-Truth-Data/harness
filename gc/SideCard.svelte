@@ -9,8 +9,12 @@
  * phone" from a media query, and a media query is the wrong question (debug
  * routes are wide with no frame, and the frame mounts after the page does).
  *
- * The mobile state is centred in the viewport, like every other Get Cache
- * popover. Nothing slides off an edge.
+ * THREE PLACEMENTS, ONE RULE. Beside the phone when the gutter is at least
+ * MIN_LANE_REM wide; floating over the phone screen when there is a frame but
+ * the gutter is narrower than that — a card squeezed to a column of five-word
+ * lines is unreadable, and the phone is the one box on the page guaranteed
+ * to be wide enough; centred in the viewport when there is no phone at all,
+ * like every other Get Cache popover. Nothing slides off an edge.
  *
  * IT ESCAPES TO <body> ON MOUNT, and must. The phone rig is drawn with a
  * transform, and a transformed ancestor becomes the containing block for
@@ -25,7 +29,10 @@
  */
 import type { Snippet } from "svelte";
 import { onMount } from "svelte";
-import { watchPhoneFrame } from "./phoneFrame.svelte";
+import { type FrameBox, watchPhoneFrame } from "./phoneFrame.svelte";
+
+/** Narrowest gutter a card will sit in. ~300px at the default root size. */
+const MIN_LANE_REM = 18.75;
 import "$rig/dev/devCard.css";
 
 let {
@@ -50,11 +57,22 @@ let {
 	[key: string]: unknown;
 } = $props();
 
-// Presence, not a breakpoint. The frame is what makes a gutter exist.
-// `undefined` until it has been looked for — painting a guess first is the
-// flash of a card in the wrong place that every reload used to show.
-let beside = $state<boolean | undefined>(undefined);
-$effect(() => watchPhoneFrame((present) => (beside = present)));
+// The measured frame, not a breakpoint. `undefined` until it has been looked
+// for — painting a guess first is the flash of a card in the wrong place that
+// every reload used to show. `null` is a page with no frame.
+let frame = $state<FrameBox | null | undefined>(undefined);
+$effect(() => watchPhoneFrame((box) => (frame = box)));
+
+const remPx = () =>
+	Number.parseFloat(getComputedStyle(document.documentElement).fontSize) || 16;
+
+const placement = $derived.by((): "beside" | "over" | "centred" | undefined => {
+	if (frame === undefined) return undefined;
+	if (frame === null) return "centred";
+	const lane = side === "left" ? frame.left : frame.right;
+	return lane >= MIN_LANE_REM * remPx() ? "beside" : "over";
+});
+const beside = $derived(placement === "beside");
 
 onMount(() => {
 	if (!el) return;
@@ -71,7 +89,9 @@ onMount(() => {
 	class:gc-lane={beside}
 	class:gc-lane--left={beside && side === "left"}
 	class:gc-lane--right={beside && side === "right"}
-	class:side-card--centred={!beside}
+	class:side-card--over={placement === "over"}
+	class:side-card--centred={placement === "centred"}
+	class:side-card--unplaced={placement === undefined}
 	style="--nudge:{top}"
 	{...rest}
 >
@@ -99,17 +119,30 @@ onMount(() => {
 	transform: translateY(calc(-50% + var(--nudge, 0px)));
 }
 
-/* No phone: centred in the VIEWPORT, gold-edged. Sized with a viewport gutter
-   rather than a percentage, so there is padding off the edge at every width —
-   88vw of a narrow phone is still a card touching both sides. */
-.side-card--centred {
+/* Floating, gold-edged, centred on its box from its own centre. */
+.side-card--centred,
+.side-card--over {
 	position: fixed;
+	transform: translate(-50%, -50%);
+	border-color: var(--rt-yellow, #e8b923);
+}
+
+/* No phone: the box is the VIEWPORT. Sized with a gutter rather than a
+   percentage, so there is padding off the edge at every width — 88vw of a
+   narrow phone is still a card touching both sides. */
+.side-card--centred {
 	left: 50%;
 	top: 50%;
-	transform: translate(-50%, -50%);
 	width: min(480px, calc(100vw - 2 * var(--card-gutter, 20px)));
 	max-height: calc(100dvh - 2 * var(--card-gutter, 20px));
-	border-color: var(--rt-yellow, #e8b923);
+}
+
+/* Gutter too narrow: the box is the PHONE SCREEN, as the frame publishes it. */
+.side-card--over {
+	left: calc(var(--phone-frame-left) + var(--phone-frame-width) / 2);
+	top: calc(var(--phone-frame-top) + var(--phone-frame-height) / 2);
+	width: min(480px, calc(var(--phone-frame-width) - 2 * var(--card-gutter, 20px)));
+	max-height: calc(var(--phone-frame-height) - 2 * var(--card-gutter, 20px));
 }
 
 /* Not yet placed: it exists and has measured, but nothing is painted until we
