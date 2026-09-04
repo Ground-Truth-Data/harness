@@ -205,9 +205,10 @@ const PACKAGE_TIER = "rapper";
  * shorter unique fragment still works typed by hand. createCommand.test.ts
  * (ReTreever) re-runs create.mjs's matcher over every printed flag.
  *
- * Flag order is load-bearing: `--min-release-age=0` is npm's and sits BEFORE
- * the `--` (without it a just-published version is invisible to its own
- * scaffold); the child flag sits AFTER the `--` or npm eats it and the
+ * Flag order is load-bearing: `--min-release-age=0` is npm's and must sit
+ * BEFORE the package name — after it, `npm create` ignores the flag and the
+ * 7-day guard hides a just-published version from its own scaffold
+ * (ENOVERSIONS); the child flag sits AFTER the `--` or npm eats it and the
  * scaffold falls back to the interactive picker.
  *
  * rapper gets the bare command (it IS the package; no flag → the picker,
@@ -216,10 +217,10 @@ const PACKAGE_TIER = "rapper";
  */
 export function createCommand(child: ChildRecord, dir = "rapper"): string | null {
 	if (child.repo === PACKAGE_TIER) {
-		return `npm create @retreever/rapper@latest ${dir} --min-release-age=0`;
+		return `npm create --min-release-age=0 @retreever/rapper@latest ${dir}`;
 	}
 	if (child.tier) return null;
-	return `npm create @retreever/rapper@latest ${dir} --min-release-age=0 -- --${child.repo}`;
+	return `npm create --min-release-age=0 @retreever/rapper@latest ${dir} -- --${child.repo}`;
 }
 
 /** Every child that can be scaffolded, in table order — the menu. */
