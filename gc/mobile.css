@@ -361,6 +361,9 @@ hr {
 
 /* Branded sonner toast — override Sonner's CSS vars + !important for every variant; offset set on <Toaster offset=...>. */
 [data-sonner-toaster] {
+	/* Sonner ships z 999999999. Pinned just UNDER Z_HANDS (10500, zTiers.ts) so the
+	   hands and the share quad ride over a toast, above every sheet and popover. */
+	z-index: 10400 !important;
 	--normal-bg: #1a1a1a;
 	--normal-text: var(--rt-fg);
 	--normal-border: var(--rt-yellow);
