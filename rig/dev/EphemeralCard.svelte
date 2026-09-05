@@ -25,8 +25,8 @@ import "./devCard.css";
  * HOW A PAGE HANDS THINGS IN. Two ways, both fine:
  *   1. children — `<EphemeralCard>…</EphemeralCard>` renders what you write.
  *   2. `bind:host` — the card's content element, for a component that needs
- *      to MOVE its own DOM here (the offline map's `debugHost` prop does
- *      this so its panels keep their state and their scoped styles).
+ *      to MOVE its own DOM here (the offline map's rail hosts do this via
+ *      EphemeralDock, so its panels keep their state and scoped styles).
  *
  * Lives in rapper/rig because that is the one tree both tiers read:
  * ReTreever owns it, syncRetreeved.sh carries it to rapper. Names no tier.
